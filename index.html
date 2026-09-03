@@ -18,7 +18,7 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* VIEWPORT LOCKED FOR SINGLE-CARD SWIPE */
+/* STABLE, NATURAL OVERFLOW CONTAINER (NO SCROLL SNAPPING FIGHT) */
 html, body {
   width: 100%; height: 100%;
   overflow: hidden;
@@ -52,26 +52,22 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 }
 .create-btn:hover { filter: brightness(1.15); box-shadow: 0 0 16px rgba(72,232,255,0.35); }
 
-/* =========================================================================
-   VERTICAL PAGE SWIPE ENGINE (1 CARD PER VIEWPORT SNAP)
-   ========================================================================= */
+/* SMOOTH NATURAL VIEWPORT (NO JITTER / NO SHAKING) */
 #feedViewport {
   width: 100vw;
   height: 100dvh;
-  overflow-y: scroll;
-  scroll-snap-type: y mandatory;
+  overflow-y: auto;
+  overflow-x: hidden;
   scroll-behavior: smooth;
-  overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
   position: absolute;
   inset: 0;
 }
 
 .card-page {
   width: 100vw;
-  height: 100dvh;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -117,7 +113,7 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 }
 
 /* =========================================================================
-   CONTINUOUS PROCEDURAL BACKGROUND ENGINES (RUNS FOREVER ON ACTIVE CARDS)
+   CONTINUOUS PROCEDURAL BACKGROUND ENGINES (RUNS CONTINUOUSLY)
    ========================================================================= */
 .bg-layer { position: absolute; inset: 0; pointer-events: none; z-index: 0; transform: translate3d(0,0,0); backface-visibility: hidden; }
 
@@ -155,7 +151,7 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 }
 @keyframes cloudPulse { 0% { transform: scale(1) translate3d(0,0,0); } 100% { transform: scale(1.15) translate3d(10px,-10px,0); } }
 
-/* 4. MATRIX STREAM (NEW) */
+/* 4. MATRIX STREAM */
 .bg-matrix {
   background:
     repeating-linear-gradient(0deg, transparent 0, transparent 8px, rgba(0,255,102,0.08) 8px, rgba(0,255,102,0.2) 12px),
@@ -166,7 +162,7 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 }
 @keyframes matrixStream { from { background-position: 0 0, 0 0, 0 0; } to { background-position: 0 160px, 0 0, 0 0; } }
 
-/* 5. AURORA DRIFT (NEW) */
+/* 5. AURORA DRIFT */
 .bg-aurora {
   background:
     radial-gradient(circle at 20% 20%, var(--card-accent-25) 0%, transparent 50%),
@@ -181,7 +177,7 @@ input, select, textarea { color: var(--text); background: transparent; border: n
   100% { transform: scale(1.05) rotate(-3deg) translate3d(15px, -10px, 0); }
 }
 
-/* 6. QUANTUM VOID (NEW) */
+/* 6. QUANTUM VOID */
 .bg-quantum {
   background:
     radial-gradient(circle at center, transparent 20%, var(--card-accent-15) 50%, transparent 75%),
@@ -232,7 +228,7 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 .visit-btn:hover { background: var(--card-accent); color: #04060a; box-shadow: 0 0 20px var(--card-accent-50); }
 
 /* =========================================================================
-   ONE-TIME LANDING TEXT ENTRANCES (ANIMATES ONCE PER CARD ARRIVAL, NO LOOP)
+   ONE-TIME LANDING ENTRANCES (PLAYS ONCE PER ARRIVAL, NEVER LOOPS)
    ========================================================================= */
 .anim-kinetic_slam.text-animated .kinetic-body {
   animation: slamOnce 0.75s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
@@ -295,7 +291,7 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 }
 
 /* =========================================================================
-   ACTIONS & MODAL OVERLAYS
+   ACTIONS & INTERACTION ROW
    ========================================================================= */
 .card-actions {
   display: flex; align-items: center; justify-content: space-between;
@@ -338,7 +334,7 @@ select.text-input { background: #080c14; }
 .swatch.active { border-color: var(--cyan); color: var(--text); box-shadow: 0 0 8px rgba(72,232,255,.25); }
 .swatch .prev { height: 16px; border-radius: 2px; margin-bottom: 3px; }
 
-/* UNCLICKABLE DISABLED VOICE CONTROLS */
+/* UNCLICKABLE DISABLED VOICE NOT REMOVED */
 .rec-wrap-disabled {
   border: 1px dashed var(--line); border-radius: var(--r); padding: 10px;
   display: flex; align-items: center; gap: 10px; opacity: 0.45; pointer-events: none; cursor: not-allowed;
@@ -349,7 +345,7 @@ select.text-input { background: #080c14; }
 .search-box { width: min(540px,100%); background: var(--panel-solid); border: 1px solid var(--line-strong); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
 .modal-close { font-size: 20px; color: var(--muted); align-self: flex-end; }
 #searchResults { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow: auto; }
-.virtual-spacer { width: 100%; pointer-events: none; }
+#scrollSentinel { height: 60px; width: 100%; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--dim); }
 #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--panel-solid); border: 1px solid var(--line-strong); padding: 8px 16px; border-radius: var(--r); font-size: 12px; opacity: 0; transition: .25s; z-index: 300; pointer-events: none; }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -377,9 +373,10 @@ select.text-input { background: #080c14; }
   </div>
 </div>
 
-<!-- PAGE SWIPE CONTAINER -->
+<!-- SMOOTH PROGRESSIVE VIEWPORT (NO GLITCH, NO SNAP RESISTANCE) -->
 <div id="feedViewport">
   <div id="feedStream" style="width:100%;display:flex;flex-direction:column;"></div>
+  <div id="scrollSentinel">✦ INFINITE KINETIC STREAM ✦</div>
 </div>
 
 <!-- CREATOR MODAL -->
@@ -426,7 +423,7 @@ REMAINS FOREVER</textarea></div>
 
       <div class="field-group"><label class="field-label">THEME PALETTE</label><div class="swatch-grid" id="themeGrid"></div></div>
       
-      <!-- PROCEDURAL BACKGROUND SELECTOR -->
+      <!-- PROCEDURAL BACKGROUND DROPDOWN -->
       <div class="field-group">
         <label class="field-label">PROCEDURAL BACKGROUND</label>
         <select class="text-input" id="inBgSelect">
@@ -459,7 +456,7 @@ REMAINS FOREVER</textarea></div>
 "use strict";
 
 /* =========================================================================
-   1. SUPABASE CLIENT
+   1. SUPABASE CLIENT INITIALIZATION
    ========================================================================= */
 const SUPABASE_URL = 'https://ymoiowbezpggrqxmkuku.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inltb2lvd2JlenBnZ3JxeG1rdWt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MTY0MzYsImV4cCI6MjEwMzk5MjQzNn0.sDmD_l1I-CDqT6lx3_jhYaQlXqNdW1r73Is9geJAlgw';
@@ -488,6 +485,7 @@ const BACKGROUNDS = {
 
 const feedViewport = document.getElementById('feedViewport');
 const feed = document.getElementById('feedStream');
+const sentinel = document.getElementById('scrollSentinel');
 const toastEl = document.getElementById('toast');
 
 function toast(m) {
@@ -527,7 +525,7 @@ const liked = new Set(JSON.parse(localStorage.getItem('tf-liked') || '[]'));
 function save(k, s) { localStorage.setItem(k, JSON.stringify([...s])); }
 
 /* =========================================================================
-   3. DOM CARD BUILDER (STRUCTURED AS FULL-PAGE SWIPE UNIT)
+   3. DOM CARD BUILDER
    ========================================================================= */
 function card(p, preview = false) {
   const t = THEMES[p.theme] || THEMES.cyber;
@@ -596,7 +594,7 @@ function card(p, preview = false) {
 }
 
 /* =========================================================================
-   4. SCRAMBLE ANIMATION (PLAYS ONCE PER SWIPE LANDING)
+   4. SCRAMBLE ANIMATION (PLAYS ONCE)
    ========================================================================= */
 function scramble(h, a) {
   let raw = decodeURIComponent(h.dataset.raw || ''), chars = '01$#<>!&%*?ABCDEFGHXYZ_/', start = performance.now();
@@ -617,7 +615,7 @@ function scramble(h, a) {
 }
 
 /* =========================================================================
-   5. SETTLED INTERSECTION OBSERVER (ONE-TIME TEXT RUN PER PAGE SNAP)
+   5. SETTLED INTERSECTION OBSERVER (ONE-TIME TEXT RUN PER CARD ARRIVAL)
    ========================================================================= */
 const landTimers = new WeakMap();
 
@@ -626,11 +624,10 @@ const animObserver = new IntersectionObserver(es => {
     let s = x.target.querySelector('.card-stage');
     if (!s) return;
     
-    // Background animation runs continuously in parallel
+    // Background layer animation runs continuously in parallel
     s.classList.toggle('active', x.isIntersecting);
 
     if (x.isIntersecting) {
-      // Trigger text entrance ONCE only after user has landed and settled on this card
       if (!s.classList.contains('text-animated') && !landTimers.has(s)) {
         let t = setTimeout(() => {
           if (!s.classList.contains('text-animated')) {
@@ -651,17 +648,13 @@ const animObserver = new IntersectionObserver(es => {
       s.classList.remove('text-animated');
     }
   });
-}, { root: feedViewport, threshold: 0.65 });
+}, { root: feedViewport, threshold: 0.5 });
 
 /* =========================================================================
-   6. VIRTUALIZED PAGE SWIPE CONTROLLER
+   6. PROGRESSIVE APPEND STREAM (NO FLICKER / NO RE-RENDER SHAKING)
    ========================================================================= */
-let posts = [], cursor = null, more = true, loading = false, raf = 0;
-const PAGE = 16, OVERSCAN = 3, WINDOW = 8;
-
-function extent() {
-  return feedViewport.clientHeight || window.innerHeight;
-}
+let posts = [], cursor = null, more = true, loading = false;
+const PAGE = 12;
 
 async function next() {
   if (loading || !more) return;
@@ -676,50 +669,32 @@ async function next() {
     }
     if (!data?.length) {
       more = false;
+      sentinel.textContent = '✦ END OF PERMANENT STREAM ✦';
     } else {
-      posts.push(...data.filter(p => !posts.some(x => x.id === p.id)));
+      const newItems = data.filter(p => !posts.some(x => x.id === p.id));
+      posts.push(...newItems);
       cursor = data[data.length - 1].created_at;
-      render();
+
+      // Mount non-destructively without wiping the DOM
+      const fragment = document.createDocumentFragment();
+      newItems.forEach(p => {
+        const c = card(p);
+        fragment.appendChild(c);
+        animObserver.observe(c);
+      });
+      feed.appendChild(fragment);
     }
   } catch (e) {
     console.error(e);
-    toast('Error loading wall stream');
+    toast('Error loading stream');
   } finally {
     loading = false;
   }
 }
 
-function render() {
-  animObserver.disconnect();
-  let y = feedViewport.scrollTop;
-  let pageH = extent();
-  let currentIndex = Math.round(y / pageH);
-  let start = Math.max(0, currentIndex - OVERSCAN);
-  let end = Math.min(posts.length, start + WINDOW);
-  
-  let f = document.createDocumentFragment();
-  let top = document.createElement('div');
-  let bottom = document.createElement('div');
-  top.className = bottom.className = 'virtual-spacer';
-  top.style.height = `${start * pageH}px`;
-  bottom.style.height = `${Math.max(0, (posts.length - end) * pageH)}px`;
-  
-  f.append(top);
-  for (let i = start; i < end; i++) {
-    let c = card(posts[i]);
-    f.append(c);
-    animObserver.observe(c);
-  }
-  f.append(bottom);
-  feed.replaceChildren(f);
-  
-  if (end > posts.length - 4) next();
-}
-
-feedViewport.addEventListener('scroll', () => {
-  if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); });
-}, { passive: true });
-window.addEventListener('resize', render);
+new IntersectionObserver(e => {
+  if (e[0].isIntersecting) next();
+}, { root: feedViewport, rootMargin: '800px' }).observe(sentinel);
 
 /* =========================================================================
    7. SOCIAL INTERACTIONS
@@ -761,7 +736,7 @@ function toggleVoice(id, b) {
 }
 
 /* =========================================================================
-   8. CREATOR DRAWER & PROCEDURAL COMPOSITOR PREVIEW
+   8. CREATOR DRAWER & PREVIEW ENGINE
    ========================================================================= */
 const drawer = document.getElementById('creatorDrawer');
 const wrap = document.getElementById('previewPhoneWrap');
@@ -821,7 +796,9 @@ document.getElementById('btnOpenCreator').onclick = () => {
 };
 document.getElementById('btnCloseDrawer').onclick = () => drawer.classList.remove('open');
 
-/* SERVER SUBMISSION RPC */
+/* =========================================================================
+   COMMIT LOGIC: DIRECT POSTGREST INSERTION
+   ========================================================================= */
 document.getElementById('btnCommit').onclick = async () => {
   let d = form();
   if (!d.headline) return toast('Headline text is required');
@@ -831,28 +808,42 @@ document.getElementById('btnCommit').onclick = async () => {
   btn.textContent = 'INSCRIBING...';
 
   try {
-    let { data, error } = await sbClient.rpc('create_kinetic_post', {
-      p_headline: d.headline,
-      p_accent_word: d.accentWord,
-      p_tagline: d.tagline,
-      p_subtitle: d.subtitle,
-      p_anim: d.anim,
-      p_theme: d.theme,
-      p_bg: d.bg,
-      p_outbound_url: d.outbound_url,
-      p_audio_url: null
-    });
+    const payload = {
+      headline: d.headline,
+      accent_word: d.accentWord || null,
+      tagline: d.tagline || 'PERMANENT STATEMENT',
+      subtitle: d.subtitle || null,
+      anim: d.anim || 'kinetic_slam',
+      theme: d.theme || 'cyber',
+      bg: d.bg || 'warp',
+      outbound_url: d.outbound_url || null,
+      audio_url: null
+    };
+
+    let { data, error } = await sbClient
+      .from('kinetic_wall')
+      .insert([payload])
+      .select()
+      .single();
 
     if (error) throw error;
+    if (!data) throw new Error('No record returned from database');
+
     own.add(data.id);
     save('tf-own', own);
     posts.unshift(data);
+    
+    // Prepend newly created card directly to the top
+    const newCard = card(data);
+    feed.prepend(newCard);
+    animObserver.observe(newCard);
+    
     drawer.classList.remove('open');
     feedViewport.scrollTo({ top: 0, behavior: 'smooth' });
-    render();
     toast('✦ PERMANENTLY INSCRIBED');
   } catch (e) {
-    toast('Commit failed: ' + e.message);
+    console.error('Commit failed:', e);
+    toast('Commit failed: ' + (e.message || 'Check database permissions'));
   } finally {
     btn.disabled = false;
     btn.textContent = 'COMMIT TO WALL FOREVER';
@@ -885,7 +876,12 @@ addEventListener('DOMContentLoaded', async () => {
   let id = location.hash.match(/^#p=(.+)/)?.[1];
   if (id) {
     let { data } = await sbClient.from('kinetic_wall').select('*').eq('id', id).maybeSingle();
-    if (data) posts.push(data);
+    if (data) {
+      posts.push(data);
+      const c = card(data);
+      feed.appendChild(c);
+      animObserver.observe(c);
+    }
   }
   next();
 });

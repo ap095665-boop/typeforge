@@ -3,180 +3,443 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<title>TYPE FORGE — Permanent Kinetic Wall</title>
-
-<!-- Supabase Client v2 -->
-<script src="https://cdn.jsdelivr.net/npm/@sb/sb-js@2"></script>
-
+<title>TYPE FORGE — Compositor Kinetic Engine</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Syne:wght@700;800&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
-:root{--void:#05070c;--panel-solid:#0c111c;--line:rgba(120,180,255,.14);--line-strong:rgba(120,180,255,.3);--cyan:#48e8ff;--violet:#b46bff;--muted:#7f8fa4;--dim:#455065;--good:#5dffa8;--crimson:#ff3355;--disp:'Space Grotesk','Syne',sans-serif;--body:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;--r:4px}
-*{box-sizing:border-box;margin:0;padding:0}html,body{min-height:100%;background:var(--void);color:#e7edf6;font-family:var(--body)}::selection{background:var(--cyan);color:#000}
-button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer;border:0;background:none}.text-input{outline:0}
-#topbar{position:fixed;top:0;left:0;right:0;height:56px;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:rgba(8,11,18,.85);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
-.brand{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-weight:800;font-size:16px;letter-spacing:.5px}.brand svg{width:22px;height:22px;filter:drop-shadow(0 0 6px var(--cyan))}.sub{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1.5px;font-weight:400;margin-left:4px}
-.topbar-right{display:flex;align-items:center;gap:10px}
-.stats-pill{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;padding:6px 14px;border:1px solid var(--line);border-radius:20px;color:var(--muted);transition:.2s}.stats-pill.clickable:hover{border-color:var(--cyan);color:#fff}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 8px var(--good)}
-.create-btn,.commit-btn{font-family:var(--mono);font-weight:700;background:linear-gradient(135deg,var(--cyan),var(--violet));color:#04060a;border-radius:var(--r);transition:.2s}.create-btn{font-size:12px;padding:8px 18px}.commit-btn{font-size:13px;padding:12px;text-align:center;margin-top:10px}.create-btn:hover,.commit-btn:hover{filter:brightness(1.15);box-shadow:0 0 16px rgba(72,232,255,.35)}
-#mainContainer{max-width:620px;margin:0 auto;padding:80px 16px 60px;display:flex;flex-direction:column;align-items:center;gap:40px}
-#feedStream{width:100%;display:flex;flex-direction:column;align-items:center;gap:36px}
-.feed-card{width:100%;max-width:520px;background:var(--panel-solid);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.6);display:flex;flex-direction:column}
-.card-meta,.card-info{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.015);font-family:var(--mono);font-size:10.5px;color:var(--muted)}
-.card-info{border-top:1px solid var(--line);border-bottom:0}
-.badge-immutable{font-family:var(--mono);font-size:9.5px;font-weight:700;color:var(--good);display:flex;align-items:center;gap:6px;letter-spacing:1px}.badge-immutable:before{content:'';width:5px;height:5px;background:var(--good);border-radius:50%;box-shadow:0 0 6px var(--good)}.post-hash{font-size:10px;color:var(--dim)}
-.card-canvas-wrap{position:relative;width:100%;aspect-ratio:9/16;background:#000;overflow:hidden}.card-canvas-wrap canvas{width:100%;height:100%;display:block}
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap');
 
-/* ACTION ROW (Voice Note, Site Link, Like, Share) */
-.card-actions{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(255,255,255,.02);border-top:1px solid var(--line);gap:10px;flex-wrap:wrap}
-.card-interactive-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.voice-pill{display:flex;align-items:center;gap:7px;background:rgba(72,232,255,.08);border:1px solid var(--cyan);padding:5px 12px;border-radius:20px;font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--cyan);cursor:pointer;transition:.2s}
-.voice-pill:hover{background:rgba(72,232,255,.18)}
-.voice-wave{display:flex;align-items:center;gap:2px;height:10px}
-.wave-bar{width:2px;height:3px;background:var(--cyan);border-radius:1px}
-.voice-pill.playing .wave-bar:nth-child(1){animation:wv .5s infinite alternate}
-.voice-pill.playing .wave-bar:nth-child(2){animation:wv .7s .2s infinite alternate}
-.voice-pill.playing .wave-bar:nth-child(3){animation:wv .4s .3s infinite alternate}
-@keyframes wv{0%{height:3px}100%{height:11px}}
-.link-pill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.05);border:1px solid var(--line);padding:5px 11px;border-radius:20px;font-family:var(--mono);font-size:10.5px;color:#fff;text-decoration:none;transition:.2s}
-.link-pill:hover{background:#fff;color:#000;border-color:#fff}
-.card-socials{display:flex;align-items:center;gap:8px;margin-left:auto}
-.social-btn{display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--line);border-radius:20px;font-family:var(--mono);font-size:10px;color:var(--muted);transition:.2s}
-.social-btn:hover{border-color:var(--line-strong);color:#fff}
-.social-btn.liked{border-color:var(--crimson);color:var(--crimson)}
-.social-btn.liked svg{fill:var(--crimson);stroke:var(--crimson)}
+:root {
+  --void: #05070c; --panel-solid: #0c111c;
+  --line: rgba(120,180,255,0.14); --line-strong: rgba(120,180,255,0.3);
+  --cyan: #48e8ff; --violet: #b46bff; --amber: #ffb454; --danger: #ff5470; --good: #5dffa8;
+  --text: #e7edf6; --muted: #7f8fa4; --dim: #455065;
+  --r: 6px;
+}
 
-/* DRAWERS & MODALS */
-#creatorDrawer,#searchDrawer{position:fixed;inset:0;z-index:200;background:rgba(4,6,10,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:.25s}
-#creatorDrawer.open,#searchDrawer.open{opacity:1;pointer-events:auto}
-.creator-box{width:100%;max-width:900px;max-height:90vh;background:var(--panel-solid);border:1px solid var(--line-strong);border-radius:12px;display:flex;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.8)}
-.creator-preview{width:380px;background:#000;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;border-right:1px solid var(--line)}
-.preview-phone{width:100%;max-width:250px;aspect-ratio:9/16;border-radius:16px;border:1.5px solid var(--line-strong);overflow:hidden;background:#000}.preview-phone canvas{width:100%;height:100%;display:block}
-.creator-form{flex:1;padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
-.form-title{font-family:var(--disp);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
-.close-drawer{font-size:20px;cursor:pointer;color:var(--muted)}
-.field-group{display:flex;flex-direction:column;gap:5px}
-.field-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;display:flex;justify-content:space-between;align-items:center}
-.text-input{border:1px solid var(--line);border-radius:var(--r);padding:9px 12px;font-size:13px;background:rgba(255,255,255,.02);transition:.15s}.text-input:focus{border-color:var(--cyan);background:rgba(72,232,255,.03)}textarea.text-input{resize:vertical;min-height:54px}select.text-input{background:#080c14}
-.swatch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.swatch{border:1px solid var(--line);border-radius:var(--r);padding:7px 4px;text-align:center;font-size:9px;color:var(--muted);cursor:pointer;transition:.15s}.swatch.active{border-color:var(--cyan);color:#e7edf6;box-shadow:0 0 8px rgba(72,232,255,.25)}.swatch .prev{height:18px;border-radius:2px;margin-bottom:4px}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* RECORDER CONTROLS */
-.rec-wrap{border:1px dashed var(--line);border-radius:var(--r);padding:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(255,255,255,.01)}
-.rec-btn{width:36px;height:36px;border-radius:50%;background:var(--crimson);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;transition:.2s}
-.rec-btn.recording{animation:rec-pulse 1s infinite alternate}
-@keyframes rec-pulse{0%{transform:scale(1)}100%{transform:scale(1.15);box-shadow:0 0 12px var(--crimson)}}
-.rec-status{font-family:var(--mono);font-size:11px;color:var(--muted);flex:1}
+/* VIEWPORT LOCKED FOR SINGLE-CARD SWIPE */
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--void); color: var(--text); font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--cyan); color: #000; }
+button { cursor: pointer; border: none; background: none; color: inherit; font-family: inherit; }
+input, select, textarea { color: var(--text); background: transparent; border: none; outline: none; font-family: inherit; }
+::-webkit-scrollbar { display: none; }
 
-/* SEARCH MODAL BOX */
-.search-box{width:100%;max-width:540px;background:var(--panel-solid);border:1px solid var(--line-strong);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 30px 90px rgba(0,0,0,.9)}
-#searchResults{display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow-y:auto}
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; height: 56px; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+  background: linear-gradient(180deg, rgba(8,11,18,0.92) 0%, rgba(8,11,18,0) 100%);
+  pointer-events: none;
+}
+.hud-element { pointer-events: auto; }
+.brand { display: flex; align-items: center; gap: 8px; font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: 0.5px; }
+.brand svg { width: 22px; height: 22px; filter: drop-shadow(0 0 6px var(--cyan)); }
+.stats-pill {
+  display: flex; align-items: center; gap: 7px; font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; padding: 6px 14px; border: 1px solid var(--line); border-radius: 20px;
+  color: var(--muted); background: rgba(8,11,18,0.7); backdrop-filter: blur(12px);
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 8px var(--good); }
+.create-btn {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; padding: 8px 16px;
+  background: linear-gradient(135deg, var(--cyan), var(--violet)); color: #04060a;
+  border-radius: var(--r); transition: 0.2s;
+}
+.create-btn:hover { filter: brightness(1.15); box-shadow: 0 0 16px rgba(72,232,255,0.35); }
 
-#scrollSentinel{height:60px;width:100%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--dim)}
-#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel-solid);border:1px solid var(--line-strong);padding:10px 18px;border-radius:var(--r);font-size:12px;opacity:0;transition:.25s;z-index:300;pointer-events:none}#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* =========================================================================
+   VERTICAL PAGE SWIPE ENGINE (1 CARD PER VIEWPORT SNAP)
+   ========================================================================= */
+#feedViewport {
+  width: 100vw;
+  height: 100dvh;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  position: absolute;
+  inset: 0;
+}
 
-@media(max-width:768px){
-#topbar{padding:0 12px}
-.brand{font-size:14px}
-.sub{display:none}
-.stats-pill{padding:5px 10px;font-size:10px}
-.create-btn{font-size:10px;padding:8px 12px}
-.creator-box{flex-direction:column;overflow-y:auto;max-height:94vh}
-.creator-preview{width:100%;padding:14px;border-right:0;border-bottom:1px solid var(--line)}
-.preview-phone{max-width:140px}
-.creator-form{padding:16px}
+.card-page {
+  width: 100vw;
+  height: 100dvh;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 14px 18px;
+  box-sizing: border-box;
+  contain: layout paint;
+  content-visibility: auto;
+  contain-intrinsic-size: 100dvh;
+}
+
+.feed-card {
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  max-height: calc(100dvh - 78px);
+  background: var(--panel-solid);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.65);
+  display: flex;
+  flex-direction: column;
+}
+
+.card-meta {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; border-bottom: 1px solid var(--line);
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--dim);
+  flex-shrink: 0;
+}
+.badge-immutable { color: var(--good); font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.badge-immutable::before { content:''; width: 5px; height: 5px; background: var(--good); border-radius: 50%; box-shadow: 0 0 6px var(--good); }
+
+.card-stage {
+  position: relative; width: 100%; flex: 1 1 auto; min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: space-between; padding: 24px 20px;
+  background: var(--card-bg, #060710);
+}
+.card-info {
+  padding: 10px 16px; border-top: 1px solid var(--line);
+  display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted);
+  flex-shrink: 0;
+}
+
+/* =========================================================================
+   CONTINUOUS PROCEDURAL BACKGROUND ENGINES (RUNS FOREVER ON ACTIVE CARDS)
+   ========================================================================= */
+.bg-layer { position: absolute; inset: 0; pointer-events: none; z-index: 0; transform: translate3d(0,0,0); backface-visibility: hidden; }
+
+/* 1. WARP DUST */
+.bg-warp {
+  background:
+    radial-gradient(circle at 50% 50%, var(--card-accent2-20) 0%, transparent 60%),
+    radial-gradient(circle at 80% 20%, var(--card-accent-15) 0%, transparent 40%),
+    radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 140px 90px, var(--card-accent), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 80px 180px, #fff, rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 100% 100%, 100% 100%, 180px 180px, 260px 260px, 140px 140px;
+  animation: warpDrift 16s linear infinite;
+}
+@keyframes warpDrift { 0% { background-position: 0 0,0 0,0 0,0 0,0 0; } 100% { background-position: 0 0,0 0,0 540px,0 780px,0 420px; } }
+
+/* 2. CYBER GRID */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px),
+    radial-gradient(circle at 50% 60%, var(--card-accent-20), transparent 70%);
+  background-size: 32px 32px, 32px 32px, 100% 100%;
+  animation: gridTravel 9s linear infinite;
+}
+@keyframes gridTravel { from { background-position: 0 0,0 0,0 0; } to { background-position: 32px 32px,32px 32px,0 0; } }
+
+/* 3. NEBULA MESH */
+.bg-clouds {
+  background:
+    radial-gradient(circle at 30% 30%, var(--card-accent-25) 0%, transparent 55%),
+    radial-gradient(circle at 70% 70%, var(--card-accent2-20) 0%, transparent 60%);
+  filter: blur(28px); animation: cloudPulse 8s ease-in-out infinite alternate;
+}
+@keyframes cloudPulse { 0% { transform: scale(1) translate3d(0,0,0); } 100% { transform: scale(1.15) translate3d(10px,-10px,0); } }
+
+/* 4. MATRIX STREAM (NEW) */
+.bg-matrix {
+  background:
+    repeating-linear-gradient(0deg, transparent 0, transparent 8px, rgba(0,255,102,0.08) 8px, rgba(0,255,102,0.2) 12px),
+    linear-gradient(180deg, var(--card-accent-15) 0%, transparent 65%),
+    radial-gradient(ellipse at 50% 100%, var(--card-accent2-20) 0%, transparent 70%);
+  background-size: 100% 16px, 100% 100%, 100% 100%;
+  animation: matrixStream 2s linear infinite;
+}
+@keyframes matrixStream { from { background-position: 0 0, 0 0, 0 0; } to { background-position: 0 160px, 0 0, 0 0; } }
+
+/* 5. AURORA DRIFT (NEW) */
+.bg-aurora {
+  background:
+    radial-gradient(circle at 20% 20%, var(--card-accent-25) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, var(--card-accent2-20) 0%, transparent 55%),
+    linear-gradient(135deg, transparent 20%, var(--card-accent-15) 50%, transparent 80%);
+  filter: blur(22px);
+  animation: auroraShift 7s ease-in-out infinite alternate;
+}
+@keyframes auroraShift {
+  0% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.18) rotate(3deg) translate3d(-10px, 15px, 0); }
+  100% { transform: scale(1.05) rotate(-3deg) translate3d(15px, -10px, 0); }
+}
+
+/* 6. QUANTUM VOID (NEW) */
+.bg-quantum {
+  background:
+    radial-gradient(circle at center, transparent 20%, var(--card-accent-15) 50%, transparent 75%),
+    repeating-radial-gradient(circle at center, rgba(255,255,255,0.04) 0 2px, transparent 2px 28px),
+    linear-gradient(to bottom, transparent, var(--card-accent2-20));
+  animation: quantumPulse 6s ease-in-out infinite alternate;
+}
+@keyframes quantumPulse {
+  0% { transform: scale(0.95); opacity: 0.7; }
+  100% { transform: scale(1.15); opacity: 1; }
+}
+
+.card-stage:not(.active) .bg-layer { animation-play-state: paused; }
+.card-stage::after {
+  content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 4px);
+  opacity:.18; mix-blend-mode:overlay;
+}
+.card-stage.active::after { animation: scanSweep 3.4s linear infinite; }
+@keyframes scanSweep { from { background-position: 0 0; } to { background-position: 0 64px; } }
+
+/* =========================================================================
+   TYPOGRAPHY COMPOSITOR
+   ========================================================================= */
+.kinetic-header { position: relative; z-index: 2; display: flex; justify-content: center; }
+.kinetic-badge {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
+  padding: 5px 12px; border-radius: 3px; background: var(--card-tag-bg, var(--card-accent)); color: #04060a;
+  box-shadow: 0 0 14px var(--card-accent-40); transform: translate3d(0,0,0); backface-visibility: hidden;
+}
+.kinetic-body {
+  position: relative; z-index: 2; width: 100%; margin: auto 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; transform: translate3d(0,0,0); backface-visibility: hidden; will-change: transform;
+}
+.kinetic-headline {
+  font-family: 'Space Grotesk', sans-serif; font-size: clamp(30px, 7.8vw, 50px); font-weight: 900;
+  line-height: 1.05; text-transform: uppercase; text-align: center; color: var(--card-text, #ffffff);
+}
+.kinetic-headline .word-wrapper { display: inline-block; white-space: pre; will-change: transform, opacity; transform: translate3d(0,0,0); }
+.kinetic-headline .accent-word { color: var(--card-accent); text-shadow: 0 0 28px var(--card-accent-50); }
+.kinetic-footer { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.kinetic-subtitle { font-size: 14px; font-weight: 600; text-align: center; color: rgba(255,255,255,0.85); text-shadow: 0 2px 8px rgba(0,0,0,0.8); max-width: 90%; }
+.visit-btn {
+  display: inline-flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  font-weight: 700; padding: 7px 16px; border-radius: 20px; text-decoration: none; background: rgba(255,255,255,0.06);
+  border: 1px solid var(--card-accent); color: var(--card-accent); box-shadow: 0 0 12px var(--card-accent-20); transition: 0.15s;
+}
+.visit-btn:hover { background: var(--card-accent); color: #04060a; box-shadow: 0 0 20px var(--card-accent-50); }
+
+/* =========================================================================
+   ONE-TIME LANDING TEXT ENTRANCES (ANIMATES ONCE PER CARD ARRIVAL, NO LOOP)
+   ========================================================================= */
+.anim-kinetic_slam.text-animated .kinetic-body {
+  animation: slamOnce 0.75s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+}
+@keyframes slamOnce {
+  0% { transform: scale3d(2.4, 2.4, 1); opacity: 0; filter: blur(8px); }
+  65% { transform: scale3d(0.98, 0.98, 1); opacity: 1; filter: blur(0); }
+  100% { transform: scale3d(1, 1, 1); opacity: 1; filter: blur(0); }
+}
+
+.anim-stagger_pop.text-animated .word-wrapper {
+  animation: popOnce 0.7s cubic-bezier(.34, 1.56, .64, 1) forwards;
+  animation-delay: calc(var(--idx) * 85ms);
+  opacity: 0;
+}
+@keyframes popOnce {
+  0% { transform: scale3d(0, 0, 1); opacity: 0; }
+  70% { transform: scale3d(1.1, 1.1, 1); opacity: 1; }
+  100% { transform: scale3d(1, 1, 1); opacity: 1; }
+}
+
+.anim-neon_surge.text-animated .kinetic-headline {
+  animation: surgeOnce 1.2s ease-in-out forwards;
+}
+@keyframes surgeOnce {
+  0% { opacity: .2; filter: none; }
+  18% { opacity: 1; filter: drop-shadow(0 0 35px var(--card-accent)); }
+  32% { opacity: .35; filter: none; }
+  50% { opacity: 1; filter: drop-shadow(0 0 30px var(--card-accent)); }
+  75% { opacity: .8; filter: drop-shadow(0 0 14px var(--card-accent-40)); }
+  100% { opacity: 1; filter: drop-shadow(0 0 24px var(--card-accent)); }
+}
+
+.anim-isometric_3d.text-animated .kinetic-body {
+  transform-style: preserve-3d;
+  animation: isoOnce 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes isoOnce {
+  0% { transform: perspective(800px) rotateX(32deg) rotateY(-24deg) translate3d(0, 26px, -40px); opacity: 0; }
+  100% { transform: perspective(800px) rotateX(15deg) rotateY(-10deg) translate3d(0, 0, 0); opacity: 1; }
+}
+
+.anim-glitch_rgb.text-animated .kinetic-headline {
+  animation: glitchOnce 0.9s steps(2, start) forwards;
+}
+@keyframes glitchOnce {
+  0% { opacity: 0; transform: translate3d(0,0,0); }
+  25% { opacity: 1; text-shadow: -4px 0 #ff1744, 4px 0 #00e5ff; transform: translate3d(3px,-1px,0); }
+  50% { text-shadow: 4px 0 #ff1744, -4px 0 #00e5ff; transform: translate3d(-3px,2px,0); }
+  75% { text-shadow: -2px 0 #ff1744, 2px 0 #00e5ff; transform: translate3d(1px,-1px,0); }
+  100% { text-shadow: none; transform: translate3d(0,0,0); opacity: 1; }
+}
+
+.anim-minimal_drift.text-animated .kinetic-body {
+  animation: driftOnce 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes driftOnce {
+  0% { transform: translate3d(0, 24px, 0); opacity: 0; }
+  100% { transform: translate3d(0, 0, 0); opacity: 1; }
+}
+
+/* =========================================================================
+   ACTIONS & MODAL OVERLAYS
+   ========================================================================= */
+.card-actions {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 16px; background: rgba(255,255,255,.02); border-top: 1px solid var(--line);
+  gap: 10px; flex-wrap: wrap; flex-shrink: 0;
+}
+.card-interactive-left, .card-socials { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.card-socials { margin-left: auto; }
+.voice-pill, .link-pill, .social-btn {
+  display: flex; align-items: center; gap: 6px; border-radius: 20px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 5px 10px;
+}
+.voice-pill { border: 1px solid var(--cyan); color: var(--cyan); background: rgba(72,232,255,.08); }
+.link-pill, .social-btn { border: 1px solid var(--line); color: var(--muted); text-decoration: none; }
+.social-btn.liked { border-color: var(--danger); color: var(--danger); }
+.social-btn:disabled { opacity: .45; cursor: not-allowed; }
+.voice-wave { display: flex; gap: 2px; }
+.wave-bar { width: 2px; height: 4px; background: currentColor; }
+.voice-pill.playing .wave-bar { animation: wv .6s infinite alternate; }
+@keyframes wv { to { height: 11px; } }
+
+#creatorDrawer, #searchDrawer {
+  position: fixed; inset: 0; z-index: 200; background: rgba(4,6,10,0.88); backdrop-filter: blur(12px);
+  display: flex; align-items: center; justify-content: center; padding: 16px; opacity: 0; pointer-events: none; transition: .25s;
+}
+#creatorDrawer.open, #searchDrawer.open { opacity: 1; pointer-events: auto; }
+.creator-box { width: 100%; max-width: 860px; max-height: 92dvh; background: var(--panel-solid); border: 1px solid var(--line-strong); border-radius: 14px; display: flex; overflow: hidden; }
+.creator-preview { width: 320px; background: #000; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 1px solid var(--line); flex-shrink: 0; }
+.preview-phone { width: 100%; max-width: 220px; aspect-ratio: 9/16; border-radius: 14px; border: 1.5px solid var(--line-strong); overflow: hidden; position: relative; }
+.preview-stage-wrap, .preview-stage-wrap .card-stage { width: 100%; height: 100%; }
+.creator-form { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.field-group { display: flex; flex-direction: column; gap: 5px; }
+.field-label { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: var(--muted); }
+.text-input { border: 1px solid var(--line); border-radius: var(--r); padding: 8px 12px; font-size: 13px; background: rgba(255,255,255,.02); transition: .15s; }
+.text-input:focus { border-color: var(--cyan); background: rgba(72,232,255,.03); }
+textarea.text-input { resize: vertical; min-height: 48px; }
+select.text-input { background: #080c14; }
+.swatch-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+.swatch { border: 1px solid var(--line); border-radius: var(--r); padding: 6px 4px; text-align: center; font-size: 9px; color: var(--muted); cursor: pointer; transition: .15s; }
+.swatch.active { border-color: var(--cyan); color: var(--text); box-shadow: 0 0 8px rgba(72,232,255,.25); }
+.swatch .prev { height: 16px; border-radius: 2px; margin-bottom: 3px; }
+
+/* UNCLICKABLE DISABLED VOICE CONTROLS */
+.rec-wrap-disabled {
+  border: 1px dashed var(--line); border-radius: var(--r); padding: 10px;
+  display: flex; align-items: center; gap: 10px; opacity: 0.45; pointer-events: none; cursor: not-allowed;
+}
+.rec-btn-disabled { width: 34px; height: 34px; border-radius: 50%; background: var(--dim); color: #fff; filter: grayscale(1); }
+
+.commit-btn { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; padding: 12px; background: linear-gradient(135deg,var(--good),var(--cyan)); color: #020508; border-radius: var(--r); margin-top: 6px; }
+.search-box { width: min(540px,100%); background: var(--panel-solid); border: 1px solid var(--line-strong); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.modal-close { font-size: 20px; color: var(--muted); align-self: flex-end; }
+#searchResults { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow: auto; }
+.virtual-spacer { width: 100%; pointer-events: none; }
+#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--panel-solid); border: 1px solid var(--line-strong); padding: 8px 16px; border-radius: var(--r); font-size: 12px; opacity: 0; transition: .25s; z-index: 300; pointer-events: none; }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width:768px) {
+  #topbar { padding: 0 10px; }
+  .brand span, .stats-pill { display: none; }
+  .brand { font-size: 14px; }
+  .create-btn { font-size: 10px; padding: 8px 10px; }
+  .creator-box { flex-direction: column; overflow-y: auto; }
+  .creator-preview { width: 100% !important; border-right: none !important; border-bottom: 1px solid var(--line); }
 }
 </style>
 </head>
 <body>
 
 <div id="topbar">
-  <div class="brand">
+  <div class="brand hud-element">
     <svg viewBox="0 0 24 24" fill="none"><path d="M4 6H20M12 6V19M8 19H16" stroke="#48e8ff" stroke-width="2.2" stroke-linecap="round"/></svg>
-    TYPE FORGE <span class="sub">PERMANENT KINETIC WALL</span>
+    TYPE FORGE <span style="font-family:'JetBrains Mono';font-size:9px;color:var(--muted);margin-left:4px;">KINETIC ENGINE</span>
   </div>
-  <div class="topbar-right">
-    <button class="stats-pill clickable" id="btnOpenSearch">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-      <span>SEARCH</span>
-    </button>
-    <div class="stats-pill"><span class="dot"></span><span id="postCountLabel">CONNECTING...</span></div>
+  <div style="display:flex;gap:8px;" class="hud-element">
+    <button class="stats-pill" id="btnOpenSearch" style="cursor:pointer;">SEARCH</button>
+    <div class="stats-pill"><span class="dot"></span><span id="postCountLabel">0 INSCRIBED</span></div>
     <button class="create-btn" id="btnOpenCreator">+ INSCRIBE</button>
   </div>
 </div>
 
-<div id="mainContainer">
-  <div id="feedStream"></div>
-  <div id="scrollSentinel">✦ LOADING IMMUTABLE POSTS ✦</div>
+<!-- PAGE SWIPE CONTAINER -->
+<div id="feedViewport">
+  <div id="feedStream" style="width:100%;display:flex;flex-direction:column;"></div>
 </div>
 
-<!-- CREATOR DRAWER WITH REAL-TIME CANVAS PREVIEW -->
+<!-- CREATOR MODAL -->
 <div id="creatorDrawer">
   <div class="creator-box">
     <div class="creator-preview">
-      <div class="preview-phone"><canvas id="previewCanvas" width="540" height="960"></canvas></div>
-      <div style="font-family:var(--mono);font-size:9.5px;color:var(--muted);margin-top:12px;letter-spacing:1px">LIVE KINETIC PREVIEW</div>
+      <div class="preview-phone" id="previewPhoneWrap"></div>
+      <div style="font-family:'JetBrains Mono';font-size:9px;color:var(--muted);margin-top:10px;">60/120 FPS GPU PREVIEW</div>
     </div>
     <div class="creator-form">
-      <div class="form-title"><span>INSCRIBE KINETIC ENGINE</span><span class="close-drawer" id="btnCloseDrawer">✕</span></div>
-      
-      <div class="field-group">
-        <label class="field-label">TAGLINE / BADGE</label>
-        <input class="text-input" id="inTag" value="PERMANENT STATEMENT" maxlength="40">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:'Space Grotesk';font-weight:700;">INSCRIBE KINETIC ENGINE</span>
+        <button id="btnCloseDrawer" style="font-size:18px;color:var(--muted)">✕</button>
       </div>
       
-      <div class="field-group">
-        <label class="field-label">MAIN HEADLINE (MULTI-LINE)</label>
-        <textarea class="text-input" id="inHead" rows="2" maxlength="80">CREATE ONCE
-REMAINS FOREVER</textarea>
-      </div>
+      <div class="field-group"><label class="field-label">TAGLINE BADGE</label><input class="text-input" id="inTag" value="PERMANENT STATEMENT" maxlength="40"></div>
+      <div class="field-group"><label class="field-label">HEADLINE (MULTI-LINE)</label><textarea class="text-input" id="inHead" rows="2" maxlength="80">CREATE ONCE
+REMAINS FOREVER</textarea></div>
+      <div class="field-group"><label class="field-label">ACCENT WORD (GLOWS)</label><input class="text-input" id="inWord" value="FOREVER" maxlength="20"></div>
+      <div class="field-group"><label class="field-label">SUBTITLE</label><input class="text-input" id="inSub" value="Hardware-accelerated typography on the web ↓" maxlength="70"></div>
+      <div class="field-group"><label class="field-label">OUTBOUND SOURCE URL (OPTIONAL)</label><input class="text-input" id="inUrl" placeholder="https://yourbrand.com"></div>
       
+      <!-- UNCLICKABLE DISABLED VOICE NOTE -->
       <div class="field-group">
-        <label class="field-label">ACCENT GLOW WORD</label>
-        <input class="text-input" id="inWord" value="FOREVER" maxlength="20">
-      </div>
-      
-      <div class="field-group">
-        <label class="field-label">SUBTITLE / PHILOSOPHY</label>
-        <input class="text-input" id="inSub" value="Inscribed on the permanent kinetic wall ↓" maxlength="70">
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">OUTBOUND URL / AD LINK (OPTIONAL)</label>
-        <input class="text-input" id="inUrl" placeholder="https://yourbrand.com">
-      </div>
-      
-      <div class="field-group">
-        <label class="field-label">
-          <span>1-MIN VOICE NOTE</span>
-          <span id="voiceSlotBadge" style="color:var(--cyan);font-weight:700;">CHECKING SLOTS...</span>
-        </label>
-        <div class="rec-wrap">
-          <button type="button" class="rec-btn" id="recToggleBtn" title="Record Voice">
-            <svg id="recIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
-          </button>
-          <div class="rec-status" id="recTimer">Tap to record pitch (00:00 / 01:00)</div>
-          <audio id="audioPreview" controls style="display:none;height:28px;max-width:140px;"></audio>
+        <label class="field-label">1-MIN VOICE NOTE <span id="voiceSlotBadge" style="color:var(--amber);">[FEATURE PAUSED]</span></label>
+        <div class="rec-wrap-disabled" title="Voice recording is currently disabled">
+          <button class="rec-btn-disabled" id="recToggleBtn" disabled>●</button>
+          <div class="rec-status" id="recTimer" style="font-family:'JetBrains Mono';font-size:11px;color:var(--dim);">Voice recording is temporarily disabled</div>
+          <audio id="audioPreview" controls hidden></audio>
         </div>
       </div>
 
-      <div class="field-group">
-        <label class="field-label">KINETIC ANIMATION ENGINE</label>
+      <div class="field-group"><label class="field-label">KINETIC ANIMATION</label>
         <select class="text-input" id="inAnim">
           <option value="kinetic_slam">Kinetic Impact Slam</option>
-          <option value="cyber_scramble">Cyber Matrix Scramble</option>
-          <option value="neon_surge">Neon Surge & Flicker</option>
           <option value="stagger_pop">Staggered Word Pop</option>
-          <option value="isometric_3d">3D Isometric Depth</option>
+          <option value="neon_surge">Neon Surge &amp; Flicker</option>
+          <option value="cyber_scramble">Cyber Scramble</option>
+          <option value="isometric_3d">3D Perspective Depth</option>
           <option value="glitch_rgb">RGB Separation Glitch</option>
-          <option value="minimal_drift">Monochrome Precision Drift</option>
+          <option value="minimal_drift">Brutalist Precision Drift</option>
         </select>
       </div>
 
-      <div class="field-group"><label class="field-label">PALETTE & THEME</label><div class="swatch-grid" id="themeGrid"></div></div>
-      <div class="field-group"><label class="field-label">BACKGROUND DYNAMICS</label><div class="swatch-grid" id="bgGrid"></div></div>
+      <div class="field-group"><label class="field-label">THEME PALETTE</label><div class="swatch-grid" id="themeGrid"></div></div>
       
+      <!-- PROCEDURAL BACKGROUND SELECTOR -->
+      <div class="field-group">
+        <label class="field-label">PROCEDURAL BACKGROUND</label>
+        <select class="text-input" id="inBgSelect">
+          <option value="warp">Warp Speed (Stars)</option>
+          <option value="grid">Cyber Grid (Perspective)</option>
+          <option value="clouds">Nebula Mesh (Aurora)</option>
+          <option value="matrix">Matrix Stream (Digital Rain)</option>
+          <option value="aurora">Aurora Drift (Waves)</option>
+          <option value="quantum">Quantum Void (Concentric)</option>
+        </select>
+      </div>
+
       <button class="commit-btn" id="btnCommit">COMMIT TO WALL FOREVER</button>
-      <div style="font-family:var(--mono);font-size:9.5px;color:var(--dim);text-align:center;margin-top:2px">WARNING: ONCE INSCRIBED, IT CANNOT BE EDITED OR DELETED</div>
     </div>
   </div>
 </div>
@@ -184,7 +447,7 @@ REMAINS FOREVER</textarea>
 <!-- SEARCH MODAL -->
 <div id="searchDrawer">
   <div class="search-box">
-    <div class="form-title"><span>SEARCH KINETIC ARCHIVE</span><span class="close-drawer" id="btnCloseSearch">✕</span></div>
+    <button class="modal-close" id="btnCloseSearch">✕</button>
     <input class="text-input" id="searchInput" placeholder="Search keywords, headlines, or badges...">
     <div id="searchResults"></div>
   </div>
@@ -198,847 +461,433 @@ REMAINS FOREVER</textarea>
 /* =========================================================================
    1. SUPABASE CLIENT
    ========================================================================= */
-const SUPABASE_URL = 'https://ldrwqpusfnssbzvqthfp.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkcndxcHVzZm5zc2J6dnF0aGZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzNzUxMDYsImV4cCI6MjEwMzk1MTEwNn0.t4B5plmjqt25A6bXN7i95i5u9wuBJjjiV-JS97YwQk0';
-
-const sb = (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY' && window.supabase)
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
+const SUPABASE_URL = 'https://ymoiowbezpggrqxmkuku.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inltb2lvd2JlenBnZ3JxeG1rdWt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MTY0MzYsImV4cCI6MjEwMzk5MjQzNn0.sDmD_l1I-CDqT6lx3_jhYaQlXqNdW1r73Is9geJAlgw';
+const sbClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) || null;
 
 /* =========================================================================
-   2. MATHEMATICS & CANVAS CORE ENGINE
+   2. CONFIGURATION & PROCEDURAL THEMES
    ========================================================================= */
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const lerp = (a, b, t) => a + (b - a) * t;
-const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
-const easeOutBack = t => 1 + (2.70158) * Math.pow(t - 1, 3) + 1.70158 * Math.pow(t - 1, 2);
-function rand(seed) { let x = Math.sin(seed * 12989.123) * 43758.5453; return x - Math.floor(x); }
-
-function toast(msg) {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  clearTimeout(t._h);
-  t._h = setTimeout(() => t.classList.remove("show"), 2600);
-}
-
 const THEMES = {
-  cyber: { name: "CYBER NEON", accent: "#48e8ff", accent2: "#ff2ad4", bg: "#050711", text: "#fff", tagBg: "#ff2ad4" },
-  gold: { name: "LUXURY GOLD", accent: "#ffd066", accent2: "#fff", bg: "#08080a", text: "#fbf5e6", tagBg: "#ffd066" },
-  matrix: { name: "TERMINAL", accent: "#39ff6a", accent2: "#0aff9d", bg: "#030804", text: "#d6ffe3", tagBg: "#39ff6a" },
-  acid: { name: "STREET ACID", accent: "#d9ff00", accent2: "#00f7ff", bg: "#090a0d", text: "#f3f4f6", tagBg: "#d9ff00" },
-  crimson: { name: "HYPER RED", accent: "#ff3355", accent2: "#ff9900", bg: "#0c0305", text: "#fff", tagBg: "#ff3355" },
-  minimal: { name: "SWISS MONO", accent: "#fff", accent2: "#808999", bg: "#060608", text: "#fff", tagBg: "#fff" }
+  cyber: { name: 'CYBER NEON', accent: '#48e8ff', accent2: '#ff2ad4', bg: '#050711', text: '#fff', tagBg: '#ff2ad4' },
+  gold: { name: 'LUXURY GOLD', accent: '#ffd066', accent2: '#fff', bg: '#08080a', text: '#fbf5e6', tagBg: '#ffd066' },
+  matrix: { name: 'TERMINAL', accent: '#39ff6a', accent2: '#0aff9d', bg: '#030804', text: '#d6ffe3', tagBg: '#39ff6a' },
+  acid: { name: 'STREET ACID', accent: '#d9ff00', accent2: '#00f7ff', bg: '#090a0d', text: '#f3f4f6', tagBg: '#d9ff00' },
+  crimson: { name: 'HYPER RED', accent: '#ff3355', accent2: '#ff9900', bg: '#0c0305', text: '#fff', tagBg: '#ff3355' },
+  minimal: { name: 'SWISS MONO', accent: '#fff', accent2: '#808999', bg: '#060608', text: '#fff', tagBg: '#fff' }
 };
 
 const BACKGROUNDS = {
-  warp: {
-    name: "WARP DUST",
-    draw(c, w, h, t, T) {
-      c.fillStyle = T.bg;
-      c.fillRect(0, 0, w, h);
-      let cx = w / 2, cy = h / 2;
-      for (let i = 0; i < 90; i++) {
-        let s = i * 4.13, sp = .5 + rand(s) * 1.2, z = (rand(s + 1) + t * .35 * sp) % 1, a = rand(s + 2) * Math.PI * 2, d = Math.pow(z, 2.2) * Math.max(w, h) * .75, x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
-        c.fillStyle = rand(s + 3) > .4 ? T.accent : T.accent2;
-        c.globalAlpha = Math.min(1, z * 1.5);
-        c.beginPath();
-        c.arc(x, y, Math.max(1, z * 3.8), 0, Math.PI * 2);
-        c.fill();
-      }
-      c.globalAlpha = 1;
-    }
-  },
-  grid: {
-    name: "RETRO GRID",
-    draw(c, w, h, t, T) {
-      c.fillStyle = T.bg;
-      c.fillRect(0, 0, w, h);
-      let hor = h * .46, s = (t * .2) % 1;
-      c.strokeStyle = T.accent;
-      c.lineWidth = 1.4;
-      for (let i = 0; i < 14; i++) {
-        let p = (i / 14 + s) % 1, y = hor + Math.pow(p, 2.4) * (h - hor);
-        c.globalAlpha = (1 - p) * .35;
-        c.beginPath();
-        c.moveTo(0, y);
-        c.lineTo(w, y);
-        c.stroke();
-      }
-      for (let i = -6; i <= 6; i++) {
-        c.globalAlpha = .18;
-        c.beginPath();
-        c.moveTo(w / 2 + i * w * .03, hor);
-        c.lineTo(w / 2 + i * w * .3, h);
-        c.stroke();
-      }
-      c.globalAlpha = 1;
-    }
-  },
-  clouds: {
-    name: "AURORA NEBULA",
-    draw(c, w, h, t, T) {
-      c.fillStyle = T.bg;
-      c.fillRect(0, 0, w, h);
-      for (let i = 0; i < 4; i++) {
-        let x = (rand(i * 5) * w + Math.sin(t * .2 + i) * 60) % w, y = (rand(i * 9) * h + Math.cos(t * .25 + i) * 60) % h, r = 80 + rand(i * 3) * 120, g = c.createRadialGradient(x, y, 0, x, y, r);
-        g.addColorStop(0, i % 2 ? T.accent : T.accent2);
-        g.addColorStop(1, "transparent");
-        c.globalAlpha = .09;
-        c.fillStyle = g;
-        c.beginPath();
-        c.arc(x, y, r, 0, Math.PI * 2);
-        c.fill();
-      }
-      c.globalAlpha = 1;
-    }
-  }
+  warp: { name: 'WARP SPEED', cls: 'bg-warp' },
+  grid: { name: 'CYBER GRID', cls: 'bg-grid' },
+  clouds: { name: 'NEBULA MESH', cls: 'bg-clouds' },
+  matrix: { name: 'MATRIX STREAM', cls: 'bg-matrix' },
+  aurora: { name: 'AURORA DRIFT', cls: 'bg-aurora' },
+  quantum: { name: 'QUANTUM VOID', cls: 'bg-quantum' }
 };
 
-const TextAnimations = {
-  kinetic_slam(c, w, h, p, d, T) {
-    let q = clamp(p / .35, 0, 1), sc = lerp(3, 1, easeOutBack(q)), sh = p < .4 ? (.4 - p) * 25 : 0;
-    c.save();
-    c.translate(w / 2 + (rand(p * 90) - .5) * sh, h * .48 + (rand(p * 75) - .5) * sh);
-    c.scale(sc, sc);
-    this.head(c, 0, 0, w * .84, d.headline, d.accentWord, T);
-    c.restore();
-    this.meta(c, w, h, p, d, T);
-  },
-  cyber_scramble(c, w, h, p, d, T) {
-    let chars = "01$#<>!&%*?ABCDEFGHXYZ_/", text = d.headline, res = Math.floor(p * text.length * 1.6), o = "";
-    for (let i = 0; i < text.length; i++) o += text[i] === " " || text[i] === "\n" ? text[i] : i < res ? text[i] : chars[Math.floor(rand(i * 7 + Math.floor(p * 30)) * chars.length)];
-    c.save();
-    c.translate(w / 2, h * .48);
-    c.strokeStyle = T.accent;
-    c.lineWidth = 2;
-    c.globalAlpha = .4 + .4 * Math.sin(p * 15);
-    c.strokeRect(-w * .43, -h * .14, w * .86, h * .28);
-    this.head(c, 0, 0, w * .82, o, d.accentWord, T);
-    c.restore();
-    this.meta(c, w, h, p, d, T);
-  },
-  neon_surge(c, w, h, p, d, T) {
-    let f = p < .3 ? (rand(p * 60) > .4 ? 1 : .2) : 1;
-    c.save();
-    c.translate(w / 2, h * .48);
-    c.globalAlpha = f;
-    c.shadowColor = T.accent;
-    c.shadowBlur = 35;
-    this.head(c, 0, 0, w * .84, d.headline, d.accentWord, T);
-    c.restore();
-    this.meta(c, w, h, p, d, T);
-  },
-  stagger_pop(c, w, h, p, d, T) {
-    let words = d.headline.replace(/\n/g, " ").split(" "), pw = .6 / Math.max(1, words.length);
-    c.save();
-    c.translate(w / 2, h * .48);
-    let fs = clamp(w / 8.5, 36, 68);
-    c.font = `900 ${fs}px Space Grotesk,sans-serif`;
-    c.textAlign = "center";
-    c.textBaseline = "middle";
-    let lh = fs * 1.15, start = -(words.length * lh) / 2 + lh / 2;
-    words.forEach((word, i) => {
-      let q = clamp((p - i * pw) / pw, 0, 1);
-      if (q <= 0) return;
-      let s = easeOutBack(q), a = d.accentWord && word.toUpperCase().includes(d.accentWord.toUpperCase());
-      c.save();
-      c.translate(0, start + i * lh);
-      c.scale(s, s);
-      c.fillStyle = a ? T.accent : T.text;
-      if (a) { c.shadowColor = T.accent; c.shadowBlur = 22; }
-      c.fillText(word.toUpperCase(), 0, 0);
-      c.restore();
-    });
-    c.restore();
-    this.meta(c, w, h, p, d, T);
-  },
-  isometric_3d(c, w, h, p, d, T) {
-    let r = lerp(-.3, 0, easeOutCubic(clamp(p / .5, 0, 1)));
-    c.save();
-    c.translate(w / 2, h * .48);
-    c.transform(1, r * .4, -r * .3, 1, 0, 0);
-    for (let x = 12; x >= 1; x -= 3) {
-      c.save();
-      c.translate(-x, x);
-      c.globalAlpha = .12;
-      this.head(c, 0, 0, w * .84, d.headline, d.accentWord, T, true);
-      c.restore();
-    }
-    c.globalAlpha = 1;
-    this.head(c, 0, 0, w * .84, d.headline, d.accentWord, T);
-    c.restore();
-    this.meta(c, w, h, p, d, T);
-  },
-  glitch_rgb(c, w, h, p, d, T) {
-    let sh = (p < .4 ? Math.sin(p * 25) : 0) * 14;
-    c.save();
-    c.translate(w / 2, h * .48);
-    c.save();
-    c.translate(-sh, 0);
-    c.globalCompositeOperation = "screen";
-    c.fillStyle = "#ff1744";
-    this.plain(c, 0, 0, w * .84, d.headline);
-    c.restore();
-    c.save();
-    c.translate(sh, 0);
-    c.globalCompositeOperation = "screen";
-    c.fillStyle = "#00e5ff";
-    this.plain(c, 0, 0, w * .84, d.headline);
-    c.restore();
-    c.globalCompositeOperation = "source-over";
-    this.head(c, 0, 0, w * .84, d.headline, d.accentWord, T);
-    c.restore();
-    this.meta(c, w, h, p, d, T);
-  },
-  minimal_drift(c, w, h, p, d, T) {
-    c.save();
-    c.translate(w / 2, h * .48 - p * 15);
-    this.head(c, 0, 0, w * .84, d.headline, d.accentWord, T);
-    c.restore();
-    this.meta(c, w, h, p, d, T);
-  },
-  head(c, x, y, maxW, text, accent, T, shadow = false) {
-    let lines = (text || '').split("\\n").join("\n").split("\n"), fs = clamp(maxW / 8.5, 36, 68);
-    c.font = `900 ${fs}px Space Grotesk,sans-serif`;
-    c.textAlign = "center";
-    c.textBaseline = "middle";
-    let lh = fs * 1.15, yy = y - lines.length * lh / 2 + lh / 2;
-    lines.forEach(line => {
-      let a = accent && line.toUpperCase().includes(accent.toUpperCase());
-      c.save();
-      c.fillStyle = shadow ? "#000" : a ? T.accent : T.text;
-      if (a && !shadow) { c.shadowColor = T.accent; c.shadowBlur = 24; }
-      c.fillText(line.toUpperCase(), x, yy);
-      c.restore();
-      yy += lh;
-    });
-  },
-  plain(c, x, y, maxW, text) {
-    let lines = (text || '').split("\\n").join("\n").split("\n"), fs = clamp(maxW / 8.5, 36, 68);
-    c.font = `900 ${fs}px Space Grotesk,sans-serif`;
-    c.textAlign = "center";
-    c.textBaseline = "middle";
-    let lh = fs * 1.15, yy = y - lines.length * lh / 2 + lh / 2;
-    lines.forEach(l => { c.fillText(l.toUpperCase(), x, yy); yy += lh; });
-  },
-  meta(c, w, h, p, d, T) {
-    let q = clamp((p - .2) / .3, 0, 1);
-    if (q <= 0) return;
-    c.save();
-    c.globalAlpha = easeOutCubic(q);
-    if (d.tagline) {
-      c.font = `700 16px JetBrains Mono,monospace`;
-      c.textAlign = "center";
-      c.textBaseline = "middle";
-      let pad = 12, tw = c.measureText(d.tagline.toUpperCase()).width;
-      c.fillStyle = T.tagBg || T.accent;
-      c.fillRect(w / 2 - tw / 2 - pad, h * .23 - 14, tw + pad * 2, 28);
-      c.fillStyle = "#04060b";
-      c.fillText(d.tagline.toUpperCase(), w / 2, h * .23);
-    }
-    if (d.subtitle) {
-      c.font = `600 20px Inter,sans-serif`;
-      c.textAlign = "center";
-      c.textBaseline = "middle";
-      c.fillStyle = "rgba(255,255,255,.85)";
-      c.shadowColor = "rgba(0,0,0,.8)";
-      c.shadowBlur = 10;
-      c.fillText(d.subtitle, w / 2, h * .74);
-    }
-    c.restore();
-  }
-};
+const feedViewport = document.getElementById('feedViewport');
+const feed = document.getElementById('feedStream');
+const toastEl = document.getElementById('toast');
 
-/* =========================================================================
-   3. ANIMATION RENDER LOOP (GPU Offloaded via IntersectionObserver)
-   ========================================================================= */
-const activeCanvases = new Map();
-const canvasObserver = new IntersectionObserver(es => {
-  es.forEach(e => {
-    if (e.isIntersecting) {
-      activeCanvases.set(e.target, e.target._meta);
-    } else {
-      activeCanvases.delete(e.target);
-      // Auto pause audio if card leaves view
-      const card = e.target.closest('.feed-card');
-      if (card) {
-        const audio = card.querySelector('audio');
-        if (audio && !audio.paused) {
-          audio.pause();
-          card.querySelector('.voice-pill')?.classList.remove('playing');
-        }
-      }
-    }
-  });
-}, { threshold: .1 });
-
-function loop(now) {
-  let t = now / 1000;
-  for (const [c, m] of activeCanvases) {
-    let ctx = c.getContext("2d"), p = t % 3.2;
-    (BACKGROUNDS[m.bg] || BACKGROUNDS.warp).draw(ctx, c.width, c.height, t, THEMES[m.theme] || THEMES.cyber);
-    (TextAnimations[m.anim] || TextAnimations.kinetic_slam).call(TextAnimations, ctx, c.width, c.height, p, m.data, THEMES[m.theme] || THEMES.cyber);
-  }
-  requestAnimationFrame(loop);
+function toast(m) {
+  toastEl.textContent = m;
+  toastEl.classList.add('show');
+  clearTimeout(toastEl._t);
+  toastEl._t = setTimeout(() => toastEl.classList.remove('show'), 2400);
 }
-requestAnimationFrame(loop);
 
-/* =========================================================================
-   4. DATA STRATEGY & DYNAMIC SUPABASE FEED
-   ========================================================================= */
-const feed = document.getElementById("feedStream");
-const loadedIds = new Set();
-let currentPage = 0;
-const BATCH = 4;
-let isLoading = false;
-let hasMore = true;
-
-// Utility formatting
-function escapeHTML(str) {
-  return (str || '').replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t));
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, x => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[x]));
 }
-function sanitizeUrl(url) {
-  if (!url) return null;
+
+function url(v) {
   try {
-    const p = new URL(url.startsWith('http') ? url : `https://${url}`);
-    return ['http:', 'https:'].includes(p.protocol) ? p.href : null;
+    let u = new URL(v.startsWith('http') ? v : 'https://' + v);
+    return /^https?:$/.test(u.protocol) ? u.href : null;
   } catch (e) { return null; }
 }
 
-function card(post) {
-  let el = document.createElement("div");
-  el.className = "feed-card";
-  el.setAttribute("data-id", post.id);
-
-  const displayId = post.serial_no ? `#${String(post.serial_no).padStart(4, '0')}` : post.id;
-  const safeHost = post.outbound_url ? sanitizeUrl(post.outbound_url) : null;
-  let hostName = 'VISIT LINK';
-  if (safeHost) {
-    try { hostName = new URL(safeHost).hostname.replace('www.', '').toUpperCase(); } catch (e) {}
-  }
-
-  el.innerHTML = `
-    <div class="card-meta">
-      <span class="badge-immutable">PERMANENT RECORD</span>
-      <span class="post-hash">${escapeHTML(displayId)} · ${escapeHTML(post.date || 'IMMUTABLE')}</span>
-    </div>
-    <div class="card-canvas-wrap">
-      <canvas width="540" height="960"></canvas>
-    </div>
-    <div class="card-actions">
-      <div class="card-interactive-left">
-        ${post.audio_url ? `
-          <button class="voice-pill" onclick="toggleVoice('${post.id}', this)">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-            <span>VOICE NOTE</span>
-            <div class="voice-wave"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div>
-            <audio src="${post.audio_url}" preload="none" onended="this.closest('.voice-pill').classList.remove('playing')"></audio>
-          </button>
-        ` : ''}
-        ${safeHost ? `
-          <a href="${safeHost}" target="_blank" rel="noopener noreferrer" class="link-pill" onclick="trackClick('${post.id}')">
-            <span>${escapeHTML(hostName)}</span>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M14 3h7v7h-2V6.41L9.41 16 8 14.59 17.59 5H14V3zM5 5h6V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-6h-2v6H5V5z"/></svg>
-          </a>
-        ` : ''}
-      </div>
-      <div class="card-socials">
-        <button class="social-btn" onclick="handleLike('${post.id}', this)">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-          <span class="like-num">${post.likes_count || 0}</span>
-        </button>
-        <button class="social-btn" onclick="sharePost('${post.id}')" title="Share Permalink">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        </button>
-      </div>
-    </div>
-    <div class="card-info">
-      <span>STYLE: ${(post.anim || 'kinetic_slam').replaceAll("_", " ").toUpperCase()}</span>
-      <span>THEME: ${(THEMES[post.theme] || ({'neon-cyan':{name:'CYBER NEON'},'electric-crimson':{name:'HYPER RED'},'matrix-green':{name:'TERMINAL'},'solar-amber':{name:'LUXURY GOLD'},'stark-monochrome':{name:'SWISS MONO'}}[post.theme] || THEMES.cyber)).name}</span>
-    </div>
-  `;
-
-  let c = el.querySelector("canvas");
-  c._meta = {
-    data: {
-      headline: post.headline,
-      accentWord: post.accent_word || post.accentWord,
-      tagline: post.tagline || post.author_handle || 'STATEMENT',
-      subtitle: post.subtitle
-    },
-    theme: post.theme,
-    bg: post.bg || 'warp',
-    anim: post.anim || ({slam:'kinetic_slam',staccato:'stagger_pop',split:'isometric_3d',scramble:'cyber_scramble'}[post.motion_style] || 'kinetic_slam')
-  };
-  canvasObserver.observe(c);
-  return el;
+function rgba(h, a) {
+  let n = parseInt(h.slice(1), 16);
+  return `rgba(${n >> 16},${n >> 8 & 255},${n & 255},${a})`;
 }
 
-async function load(reset = false) {
-  if (isLoading || (!hasMore && !reset)) return;
-  isLoading = true;
-
-  if (reset) {
-    feed.innerHTML = '';
-    loadedIds.clear();
-    currentPage = 0;
-    hasMore = true;
-  }
-
-  if (sb) {
-    const from = currentPage * BATCH;
-    const to = from + BATCH - 1;
-
-    try {
-      const { data, error, count } = await sb
-        .from('kinetic_wall')
-        .select('*', { count: 'exact' })
-        .order('is_pinned', { ascending: false })
-        .order('created_at', { ascending: false })
-        .range(from, to);
-
-      if (error) throw error;
-
-      if (count !== null) {
-        document.getElementById("postCountLabel").textContent = `${count} INSCRIBED`;
-      }
-
-      if (!data || data.length === 0) {
-        hasMore = false;
-        document.getElementById("scrollSentinel").textContent = "✦ END OF PERMANENT STREAM ✦";
-        return;
-      }
-
-      data.forEach(p => {
-        if (!loadedIds.has(p.id)) {
-          loadedIds.add(p.id);
-          feed.appendChild(card(p));
-        }
-      });
-
-      currentPage++;
-    } catch (err) {
-      console.error(err);
-      toast("Error loading wall data");
-    } finally {
-      isLoading = false;
-    }
-  } else {
-    // Fallback seed when Supabase keys are not yet configured
-    document.getElementById("postCountLabel").textContent = "OFFLINE MODE";
-    document.getElementById("scrollSentinel").textContent = "✦ SET SUPABASE KEYS TO SYNC ✦";
-    isLoading = false;
-  }
+function headline(h, a) {
+  let i = 0;
+  return String(h || '').split('\n').map(l =>
+    `<div>${l.split(' ').map(w =>
+      `<span class="word-wrapper ${a && w.toUpperCase().includes(a.toUpperCase()) ? 'accent-word' : ''}" style="--idx:${i++}">${esc(w)}</span>`
+    ).join(' ')}</div>`
+  ).join('');
 }
 
-// Infinite scroll sentinel
-new IntersectionObserver(es => {
-  if (es[0].isIntersecting) load();
-}, { rootMargin: "400px" }).observe(document.getElementById("scrollSentinel"));
+const own = new Set(JSON.parse(localStorage.getItem('tf-own') || '[]'));
+const liked = new Set(JSON.parse(localStorage.getItem('tf-liked') || '[]'));
+function save(k, s) { localStorage.setItem(k, JSON.stringify([...s])); }
 
 /* =========================================================================
-   5. VOICE RECORDING ENGINE & 1,000 CAP ENFORCEMENT
+   3. DOM CARD BUILDER (STRUCTURED AS FULL-PAGE SWIPE UNIT)
    ========================================================================= */
-const MAX_VOICE_SLOTS = 1000;
-let voiceCapReached = false;
-let mediaRecorder = null;
-let audioChunks = [];
-let recordedBlob = null;
-let recInterval = null;
-let recSecs = 0;
-let activeMimeType = '';
+function card(p, preview = false) {
+  const t = THEMES[p.theme] || THEMES.cyber;
+  const b = BACKGROUNDS[p.bg] || BACKGROUNDS.warp;
+  const pageWrap = document.createElement('div');
+  const u = url(p.outbound_url || p.url || '');
+  
+  pageWrap.className = preview ? 'preview-stage-wrap' : 'card-page';
+  pageWrap.dataset.id = p.id || '';
 
-function getSafeMimeType() {
-  const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/aac', 'audio/ogg'];
-  for (const t of types) {
-    if (window.MediaRecorder && MediaRecorder.isTypeSupported(t)) return t;
+  const cardInner = document.createElement('div');
+  cardInner.className = preview ? 'card-stage-preview' : 'feed-card';
+
+  for (const [k, v] of Object.entries({
+    '--card-bg': t.bg, '--card-text': t.text, '--card-accent': t.accent,
+    '--card-accent-15': rgba(t.accent, .15), '--card-accent-20': rgba(t.accent, .2),
+    '--card-accent-25': rgba(t.accent, .25), '--card-accent-40': rgba(t.accent, .4),
+    '--card-accent-50': rgba(t.accent, .5), '--card-accent2-20': rgba(t.accent2, .2),
+    '--card-tag-bg': t.tagBg
+  })) {
+    cardInner.style.setProperty(k, v);
   }
-  return '';
+
+  let id = p.serial_no ? `#${String(p.serial_no).padStart(4, '0')}` : (p.id || 'ETCH');
+  
+  cardInner.innerHTML = `
+    ${preview ? '' : `<div class="card-meta"><span class="badge-immutable">PERMANENT RECORD</span><span>${esc(id)} · IMMUTABLE</span></div>`}
+    <div class="card-stage anim-${esc(p.anim || 'kinetic_slam')}">
+      <div class="bg-layer ${b.cls}"></div>
+      <div class="kinetic-header"><div class="kinetic-badge">${esc(p.tagline || 'DECLARATION')}</div></div>
+      <div class="kinetic-body"><h1 class="kinetic-headline" data-raw="${encodeURIComponent(p.headline || '')}">${headline(p.headline, p.accent_word || p.accentWord)}</h1></div>
+      <div class="kinetic-footer">
+        ${p.subtitle ? `<div class="kinetic-subtitle">${esc(p.subtitle)}</div>` : ''}
+        ${u ? `<a class="visit-btn" href="${esc(u)}" target="_blank" rel="noopener" onclick="trackClick('${p.id}')">VISIT SOURCE ↗</a>` : ''}
+      </div>
+    </div>
+    ${preview ? '' : `
+      <div class="card-actions">
+        <div class="card-interactive-left">
+          ${p.audio_url ? `
+            <button class="voice-pill" onclick="toggleVoice('${p.id}',this)">
+              ▶ <span>VOICE NOTE</span><span class="voice-wave"><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i></span>
+              <audio src="${esc(p.audio_url)}" preload="none"></audio>
+            </button>
+          ` : ''}
+        </div>
+        <div class="card-socials">
+          <button class="social-btn" ${own.has(p.id) ? 'disabled title="You cannot like your own inscription"' : ''} onclick="handleLike('${p.id}',this)">
+            ♡ <span>${p.likes_count || 0}</span>
+          </button>
+          <button class="social-btn" onclick="sharePost('${p.id}')">↗</button>
+        </div>
+      </div>
+      <div class="card-info">
+        <span>STYLE: ${esc((p.anim || 'kinetic_slam').replaceAll('_', ' ').toUpperCase())}</span>
+        <span>THEME: ${t.name}</span>
+      </div>
+    `}
+  `;
+  cardInner._accent = p.accent_word || p.accentWord || '';
+  if (liked.has(p.id) && !own.has(p.id)) cardInner.querySelector('.social-btn')?.classList.add('liked');
+  
+  if (preview) return cardInner;
+  pageWrap.appendChild(cardInner);
+  return pageWrap;
 }
 
-async function checkVoiceCap() {
-  if (!sb) return;
-  const badge = document.getElementById("voiceSlotBadge");
-  const btn = document.getElementById("recToggleBtn");
-  const timer = document.getElementById("recTimer");
+/* =========================================================================
+   4. SCRAMBLE ANIMATION (PLAYS ONCE PER SWIPE LANDING)
+   ========================================================================= */
+function scramble(h, a) {
+  let raw = decodeURIComponent(h.dataset.raw || ''), chars = '01$#<>!&%*?ABCDEFGHXYZ_/', start = performance.now();
+  function f(n) {
+    let q = Math.min(1, (n - start) / 750), k = Math.floor(q * raw.length), x = 0;
+    h.innerHTML = raw.split('\n').map(l =>
+      `<div>${l.split(' ').map(w => {
+        let z = '';
+        for (let c of w) z += x++ < k ? esc(c) : chars[Math.random() * chars.length | 0];
+        x++;
+        return `<span class="word-wrapper">${z}</span>`;
+      }).join(' ')}</div>`
+    ).join('');
+    if (q < 1) requestAnimationFrame(f);
+    else h.innerHTML = headline(raw, a);
+  }
+  requestAnimationFrame(f);
+}
 
-  try {
-    const { count, error } = await sb
-      .from('kinetic_wall')
-      .select('*', { count: 'exact', head: true })
-      .not('audio_url', 'is', null);
+/* =========================================================================
+   5. SETTLED INTERSECTION OBSERVER (ONE-TIME TEXT RUN PER PAGE SNAP)
+   ========================================================================= */
+const landTimers = new WeakMap();
 
-    if (error) throw error;
-    const used = count || 0;
-    const remaining = Math.max(0, MAX_VOICE_SLOTS - used);
+const animObserver = new IntersectionObserver(es => {
+  es.forEach(x => {
+    let s = x.target.querySelector('.card-stage');
+    if (!s) return;
+    
+    // Background animation runs continuously in parallel
+    s.classList.toggle('active', x.isIntersecting);
 
-    if (used >= MAX_VOICE_SLOTS) {
-      voiceCapReached = true;
-      badge.textContent = "CAP REACHED (1,000 / 1,000)";
-      badge.style.color = "var(--crimson)";
-      btn.disabled = true;
-      btn.style.opacity = ".3";
-      btn.style.cursor = "not-allowed";
-      timer.textContent = "VOICE SLOTS EXHAUSTED";
+    if (x.isIntersecting) {
+      // Trigger text entrance ONCE only after user has landed and settled on this card
+      if (!s.classList.contains('text-animated') && !landTimers.has(s)) {
+        let t = setTimeout(() => {
+          if (!s.classList.contains('text-animated')) {
+            s.classList.add('text-animated');
+            if (s.classList.contains('anim-cyber_scramble')) {
+              scramble(s.querySelector('.kinetic-headline'), x.target.querySelector('.feed-card')?._accent);
+            }
+          }
+          landTimers.delete(s);
+        }, 180);
+        landTimers.set(s, t);
+      }
     } else {
-      voiceCapReached = false;
-      badge.textContent = `${remaining} / 1,000 SLOTS LEFT`;
-      badge.style.color = "var(--cyan)";
-      btn.disabled = false;
-      btn.style.opacity = "1";
-      btn.style.cursor = "pointer";
+      if (landTimers.has(s)) {
+        clearTimeout(landTimers.get(s));
+        landTimers.delete(s);
+      }
+      s.classList.remove('text-animated');
+    }
+  });
+}, { root: feedViewport, threshold: 0.65 });
+
+/* =========================================================================
+   6. VIRTUALIZED PAGE SWIPE CONTROLLER
+   ========================================================================= */
+let posts = [], cursor = null, more = true, loading = false, raf = 0;
+const PAGE = 16, OVERSCAN = 3, WINDOW = 8;
+
+function extent() {
+  return feedViewport.clientHeight || window.innerHeight;
+}
+
+async function next() {
+  if (loading || !more) return;
+  loading = true;
+  try {
+    let q = sbClient.from('kinetic_wall').select('*', { count: cursor ? undefined : 'exact' }).order('created_at', { ascending: false }).limit(PAGE);
+    if (cursor) q = q.lt('created_at', cursor);
+    let { data, error, count } = await q;
+    if (error) throw error;
+    if (count !== null) {
+      document.getElementById('postCountLabel').textContent = `${count} INSCRIBED`;
+    }
+    if (!data?.length) {
+      more = false;
+    } else {
+      posts.push(...data.filter(p => !posts.some(x => x.id === p.id)));
+      cursor = data[data.length - 1].created_at;
+      render();
     }
   } catch (e) {
-    badge.textContent = "FREE TIER (UP TO 1,000)";
+    console.error(e);
+    toast('Error loading wall stream');
+  } finally {
+    loading = false;
   }
 }
 
-const recToggleBtn = document.getElementById("recToggleBtn");
-const recTimer = document.getElementById("recTimer");
-const audioPreview = document.getElementById("audioPreview");
-const recIcon = document.getElementById("recIcon");
-
-recToggleBtn.addEventListener("click", () => {
-  if (voiceCapReached) {
-    toast("Voice recording cap reached (1,000 slots full)");
-    return;
+function render() {
+  animObserver.disconnect();
+  let y = feedViewport.scrollTop;
+  let pageH = extent();
+  let currentIndex = Math.round(y / pageH);
+  let start = Math.max(0, currentIndex - OVERSCAN);
+  let end = Math.min(posts.length, start + WINDOW);
+  
+  let f = document.createDocumentFragment();
+  let top = document.createElement('div');
+  let bottom = document.createElement('div');
+  top.className = bottom.className = 'virtual-spacer';
+  top.style.height = `${start * pageH}px`;
+  bottom.style.height = `${Math.max(0, (posts.length - end) * pageH)}px`;
+  
+  f.append(top);
+  for (let i = start; i < end; i++) {
+    let c = card(posts[i]);
+    f.append(c);
+    animObserver.observe(c);
   }
-  if (mediaRecorder && mediaRecorder.state === "recording") {
-    stopRecording();
-  } else {
-    startRecording();
-  }
-});
-
-async function startRecording() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    toast("HTTPS required for microphone access");
-    return;
-  }
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { channelCount: 1, sampleRate: 16000, echoCancellation: true, noiseSuppression: true }
-    });
-
-    audioChunks = [];
-    activeMimeType = getSafeMimeType();
-    const opts = {};
-    if (activeMimeType) {
-      opts.mimeType = activeMimeType;
-      if (activeMimeType.includes('webm')) opts.audioBitsPerSecond = 16000;
-    }
-
-    mediaRecorder = new MediaRecorder(stream, opts);
-    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-    mediaRecorder.onstop = () => {
-      recordedBlob = new Blob(audioChunks, { type: activeMimeType || 'audio/webm' });
-      if (audioPreview.src) URL.revokeObjectURL(audioPreview.src);
-      audioPreview.src = URL.createObjectURL(recordedBlob);
-      audioPreview.style.display = "block";
-    };
-
-    mediaRecorder.start();
-    recSecs = 0;
-    recToggleBtn.classList.add("recording");
-    recIcon.innerHTML = `<rect x="6" y="6" width="12" height="12"/>`;
-
-    recInterval = setInterval(() => {
-      recSecs++;
-      const m = String(Math.floor(recSecs / 60)).padStart(2, '0');
-      const s = String(recSecs % 60).padStart(2, '0');
-      recTimer.textContent = `Recording... (${m}:${s} / 01:00)`;
-      if (recSecs >= 60) stopRecording();
-    }, 1000);
-  } catch (err) {
-    toast("Microphone access denied");
-  }
+  f.append(bottom);
+  feed.replaceChildren(f);
+  
+  if (end > posts.length - 4) next();
 }
 
-function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state === "recording") {
-    mediaRecorder.stop();
-  }
-  if (mediaRecorder && mediaRecorder.stream) {
-    mediaRecorder.stream.getTracks().forEach(t => t.stop());
-  }
-  clearInterval(recInterval);
-  recToggleBtn.classList.remove("recording");
-  recIcon.innerHTML = `<path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>`;
-  recTimer.textContent = `Recorded (${recSecs}s) — ready to commit`;
-}
-
-let currentAudio = null;
-function toggleVoice(id, pill) {
-  const audio = pill.querySelector("audio");
-  if (!audio) return;
-  if (currentAudio && currentAudio !== audio) {
-    currentAudio.pause();
-    currentAudio.closest('.voice-pill')?.classList.remove('playing');
-  }
-  if (audio.paused) {
-    audio.play().then(() => {
-      pill.classList.add("playing");
-      currentAudio = audio;
-      if (sb) sb.rpc('increment_listens', { target_id: id }).catch(() => {});
-    }).catch(() => toast("Audio playback blocked"));
-  } else {
-    audio.pause();
-    pill.classList.remove("playing");
-  }
-}
+feedViewport.addEventListener('scroll', () => {
+  if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); });
+}, { passive: true });
+window.addEventListener('resize', render);
 
 /* =========================================================================
-   6. SOCIAL ENGAGEMENT & PERMALINKS
+   7. SOCIAL INTERACTIONS
    ========================================================================= */
-async function handleLike(id, btn) {
-  if (btn.classList.contains("liked")) return;
-  btn.classList.add("liked");
-  const num = btn.querySelector(".like-num");
-  num.textContent = parseInt(num.textContent, 10) + 1;
-  if (sb) {
-    await sb.rpc('increment_likes', { target_id: id }).catch(() => {});
-  }
+async function handleLike(id, b) {
+  if (own.has(id)) { toast('You cannot like your own inscription'); return; }
+  if (liked.has(id)) return;
+  b.disabled = true;
+  let { error } = await sbClient.rpc('increment_likes', { target_id: id });
+  if (error) { b.disabled = false; toast('Unable to record like'); return; }
+  b.classList.add('liked');
+  b.querySelector('span').textContent = +b.querySelector('span').textContent + 1;
+  liked.add(id);
+  save('tf-liked', liked);
 }
 
 function sharePost(id) {
-  const url = `${window.location.origin}${window.location.pathname}#p=${id}`;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(() => toast("✦ PERMALINK COPIED TO CLIPBOARD"));
-  }
+  navigator.clipboard?.writeText(location.origin + location.pathname + '#p=' + id).then(() => toast('✦ PERMALINK COPIED'));
 }
 
 function trackClick(id) {
-  if (sb) {
-    sb.rpc('increment_clicks', { target_id: id }).catch(() => {});
+  sbClient.rpc('increment_clicks', { target_id: id }).catch(() => {});
+}
+
+let playing = null;
+function toggleVoice(id, b) {
+  let a = b.querySelector('audio');
+  if (playing && playing !== a) playing.pause();
+  if (a.paused) {
+    a.play().then(() => {
+      playing = a;
+      b.classList.add('playing');
+      sbClient.rpc('increment_listens', { target_id: id }).catch(() => {});
+    }).catch(() => toast('Audio playback blocked'));
+  } else {
+    a.pause();
+    b.classList.remove('playing');
   }
 }
 
 /* =========================================================================
-   7. LIVE DRAWER PREVIEW & SUBMISSION
+   8. CREATOR DRAWER & PROCEDURAL COMPOSITOR PREVIEW
    ========================================================================= */
-const drawer = document.getElementById("creatorDrawer");
-const pc = document.getElementById("previewCanvas");
-const px = pc.getContext("2d");
-let pTheme = "cyber", pBg = "warp";
+const drawer = document.getElementById('creatorDrawer');
+const wrap = document.getElementById('previewPhoneWrap');
+const inBgSelect = document.getElementById('inBgSelect');
+let theme = 'cyber';
 
 function form() {
   return {
-    tagline: inTag.value.trim(),
-    headline: inHead.value.trim(),
-    accentWord: inWord.value.trim(),
-    subtitle: inSub.value.trim(),
-    anim: inAnim.value,
-    url: sanitizeUrl(inUrl.value.trim())
+    tagline: document.getElementById('inTag').value.trim(),
+    headline: document.getElementById('inHead').value.trim(),
+    accentWord: document.getElementById('inWord').value.trim(),
+    subtitle: document.getElementById('inSub').value.trim(),
+    outbound_url: url(document.getElementById('inUrl').value.trim()),
+    anim: document.getElementById('inAnim').value,
+    theme,
+    bg: inBgSelect.value
   };
 }
 
-function swatches(id, obj, initial, setter) {
-  let g = document.getElementById(id);
-  Object.entries(obj).forEach(([k, v]) => {
-    let e = document.createElement("div");
-    e.className = "swatch" + (k === initial ? " active" : "");
-    e.innerHTML = `<div class="prev" style="background:linear-gradient(135deg,${v.accent || "#111"},${v.accent2 || "#222"})"></div>${v.name}`;
+function preview() {
+  wrap.replaceChildren(card(form(), true));
+  const stage = wrap.querySelector('.card-stage');
+  if (stage) {
+    stage.classList.add('active', 'text-animated');
+    if (stage.classList.contains('anim-cyber_scramble')) {
+      scramble(stage.querySelector('.kinetic-headline'), document.getElementById('inWord')?.value || '');
+    }
+  }
+}
+
+for (let id of ['inTag', 'inHead', 'inWord', 'inSub', 'inUrl']) {
+  document.getElementById(id).addEventListener('input', preview);
+}
+document.getElementById('inAnim').onchange = preview;
+inBgSelect.onchange = preview;
+
+function sw(id, obj, set) {
+  let parent = document.getElementById(id);
+  parent.innerHTML = '';
+  for (let [k, v] of Object.entries(obj)) {
+    let e = document.createElement('div');
+    e.className = 'swatch' + (k === theme ? ' active' : '');
+    e.innerHTML = `<div class="prev" style="background:linear-gradient(135deg,${v.accent || '#111'},${v.accent2 || '#222'})"></div>${v.name}`;
     e.onclick = () => {
-      setter(k);
-      [...g.children].forEach(x => x.classList.toggle("active", x === e));
+      set(k);
+      [...e.parentElement.children].forEach(x => x.classList.toggle('active', x === e));
+      preview();
     };
-    g.appendChild(e);
-  });
-}
-
-swatches("themeGrid", THEMES, pTheme, k => pTheme = k);
-swatches("bgGrid", BACKGROUNDS, pBg, k => pBg = k);
-
-function preview(now) {
-  if (drawer.classList.contains("open")) {
-    let d = form(), t = now / 1000, p = t % 3.2;
-    BACKGROUNDS[pBg].draw(px, pc.width, pc.height, t, THEMES[pTheme]);
-    (TextAnimations[d.anim] || TextAnimations.kinetic_slam).call(TextAnimations, px, pc.width, pc.height, p, d, THEMES[pTheme]);
+    parent.append(e);
   }
-  requestAnimationFrame(preview);
 }
-requestAnimationFrame(preview);
+sw('themeGrid', THEMES, k => theme = k);
 
-btnOpenCreator.onclick = () => {
-  drawer.classList.add("open");
-  checkVoiceCap();
+document.getElementById('btnOpenCreator').onclick = () => {
+  drawer.classList.add('open');
+  preview();
 };
-btnCloseDrawer.onclick = () => {
-  drawer.classList.remove("open");
-  stopRecording();
-};
-drawer.onclick = e => {
-  if (e.target === drawer) {
-    drawer.classList.remove("open");
-    stopRecording();
-  }
-};
+document.getElementById('btnCloseDrawer').onclick = () => drawer.classList.remove('open');
 
-btnCommit.onclick = async () => {
+/* SERVER SUBMISSION RPC */
+document.getElementById('btnCommit').onclick = async () => {
   let d = form();
-  if (!d.headline) { toast("Headline text is required"); return; }
-  if (!sb) { toast("Supabase is not configured"); return; }
-
-  btnCommit.disabled = true;
-  btnCommit.textContent = "INSCRIBING FOREVER...";
+  if (!d.headline) return toast('Headline text is required');
+  
+  const btn = document.getElementById('btnCommit');
+  btn.disabled = true;
+  btn.textContent = 'INSCRIBING...';
 
   try {
-    let audioUrl = null;
-
-    if (recordedBlob) {
-      if (voiceCapReached) {
-        toast("Voice cap reached. Saving text only.");
-      } else {
-        const ext = activeMimeType.includes('mp4') ? 'mp4' : 'webm';
-        const fileKey = `voice_${crypto.randomUUID ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).substring(2, 8)}.${ext}`;
-        const cleanType = (recordedBlob.type || activeMimeType || 'audio/webm').split(';')[0];
-        const { error: uploadError } = await sb.storage.from('voice_notes').upload(fileKey, recordedBlob, { contentType: cleanType, upsert: false });
-        if (uploadError) throw uploadError;
-        const { data: urlData } = sb.storage.from('voice_notes').getPublicUrl(fileKey);
-        audioUrl = urlData.publicUrl;
-      }
-    }
-
-    const themeMap = { cyber:'neon-cyan', gold:'solar-amber', matrix:'matrix-green', acid:'neon-cyan', crimson:'electric-crimson', minimal:'stark-monochrome' };
-    const motionMap = { kinetic_slam:'slam', cyber_scramble:'scramble', neon_surge:'slam', stagger_pop:'staccato', isometric_3d:'split', glitch_rgb:'scramble', minimal_drift:'split' };
-
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/inscribe`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'X-Client-Info': 'typeforge-web',
-        'X-Idempotency-Key': (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`)
-      },
-      body: JSON.stringify({
-        headline: d.headline,
-        accent_word: d.accentWord,
-        subtitle: d.subtitle,
-        author_handle: d.tagline || 'ORIGIN',
-        theme: themeMap[pTheme] || 'neon-cyan',
-        motion_style: motionMap[d.anim] || 'slam',
-        outbound_url: d.url || null,
-        audio_url: audioUrl
-      })
+    let { data, error } = await sbClient.rpc('create_kinetic_post', {
+      p_headline: d.headline,
+      p_accent_word: d.accentWord,
+      p_tagline: d.tagline,
+      p_subtitle: d.subtitle,
+      p_anim: d.anim,
+      p_theme: d.theme,
+      p_bg: d.bg,
+      p_outbound_url: d.outbound_url,
+      p_audio_url: null
     });
 
-    let result = null;
-    try { result = await response.json(); } catch (_) {}
-    if (!response.ok || !result?.success) {
-      if (response.status === 409) throw new Error('Voice capacity reached. Please submit without voice.');
-      if (response.status === 429) throw new Error('Too many inscriptions. Please wait a moment and try again.');
-      throw new Error(result?.error || `Inscribe failed (${response.status})`);
-    }
-
-    const inserted = result.card;
-    if (inserted) {
-      loadedIds.add(inserted.id);
-      feed.prepend(card(inserted));
-    }
-
-    drawer.classList.remove("open");
-    resetCreatorForm();
-    scrollTo({ top: 0, behavior: "smooth" });
-    toast("✦ PERMANENTLY INSCRIBED ONTO WALL");
-    load(true);
-  } catch (err) {
-    console.error(err);
-    toast("Commit failed: " + (err?.message || 'Unknown error'));
+    if (error) throw error;
+    own.add(data.id);
+    save('tf-own', own);
+    posts.unshift(data);
+    drawer.classList.remove('open');
+    feedViewport.scrollTo({ top: 0, behavior: 'smooth' });
+    render();
+    toast('✦ PERMANENTLY INSCRIBED');
+  } catch (e) {
+    toast('Commit failed: ' + e.message);
   } finally {
-    btnCommit.disabled = false;
-    btnCommit.textContent = "COMMIT TO WALL FOREVER";
+    btn.disabled = false;
+    btn.textContent = 'COMMIT TO WALL FOREVER';
   }
 };
 
-function resetCreatorForm() {
-  inHead.value = "CREATE ONCE\nREMAINS FOREVER";
-  inWord.value = "FOREVER";
-  inSub.value = "Inscribed on the permanent kinetic wall ↓";
-  inUrl.value = "";
-  if (audioPreview.src) URL.revokeObjectURL(audioPreview.src);
-  audioPreview.src = "";
-  audioPreview.style.display = "none";
-  recordedBlob = null;
-  recTimer.textContent = "Tap to record pitch (00:00 / 01:00)";
-}
+/* =========================================================================
+   9. SEARCH MODAL
+   ========================================================================= */
+const searchDrawer = document.getElementById('searchDrawer');
+const searchInput = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+
+document.getElementById('btnOpenSearch').onclick = () => searchDrawer.classList.add('open');
+document.getElementById('btnCloseSearch').onclick = () => searchDrawer.classList.remove('open');
+
+searchInput.oninput = async () => {
+  let q = searchInput.value.trim();
+  if (!q) return searchResults.replaceChildren();
+  let { data } = await sbClient.from('kinetic_wall').select('id,serial_no,headline,tagline').or(`headline.ilike.%${q}%,subtitle.ilike.%${q}%,tagline.ilike.%${q}%`).limit(8);
+  searchResults.innerHTML = (data || []).map(p =>
+    `<button class="text-input" style="padding:8px 0;text-align:left;border-bottom:1px solid var(--line);" onclick="location.hash='p=${p.id}';location.reload()">#${p.serial_no} · ${esc(p.headline)}</button>`
+  ).join('');
+};
 
 /* =========================================================================
-   8. SEARCH MODAL ENGINE
+   10. BOOTSTRAP INITIALIZER
    ========================================================================= */
-const searchDrawer = document.getElementById("searchDrawer");
-const searchInput = document.getElementById("searchInput");
-const searchResults = document.getElementById("searchResults");
-let searchTimer = null;
-
-document.getElementById("btnOpenSearch").onclick = () => searchDrawer.classList.add("open");
-document.getElementById("btnCloseSearch").onclick = () => searchDrawer.classList.remove("open");
-searchDrawer.onclick = e => { if (e.target === searchDrawer) searchDrawer.classList.remove("open"); };
-
-searchInput.addEventListener("input", () => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(performSearch, 300);
-});
-
-async function performSearch() {
-  const q = searchInput.value.replace(/[^a-zA-Z0-9\s]/g, '').trim();
-  if (!q || !sb) {
-    searchResults.innerHTML = '';
-    return;
+addEventListener('DOMContentLoaded', async () => {
+  let id = location.hash.match(/^#p=(.+)/)?.[1];
+  if (id) {
+    let { data } = await sbClient.from('kinetic_wall').select('*').eq('id', id).maybeSingle();
+    if (data) posts.push(data);
   }
-  try {
-    const { data } = await sb
-      .from('kinetic_wall')
-      .select('id, serial_no, headline, accent_word')
-      .or(`headline.ilike.%${q}%,subtitle.ilike.%${q}%,accent_word.ilike.%${q}%,author_handle.ilike.%${q}%`)
-      .limit(8);
-
-    if (!data || data.length === 0) {
-      searchResults.innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--dim);padding:10px;">NO MATCHES IN ARCHIVE</div>`;
-      return;
-    }
-
-    searchResults.innerHTML = data.map(item => `
-      <div style="padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:var(--r);cursor:pointer;transition:.15s;" onclick="jumpToCard('${item.id}')">
-        <div style="font-family:var(--mono);font-size:9.5px;color:var(--cyan)">#${String(item.serial_no || 1).padStart(4, '0')} · ${escapeHTML(item.accent_word || 'STATEMENT')}</div>
-        <div style="font-family:var(--disp);font-size:13px;font-weight:700;margin-top:2px;">${escapeHTML((item.headline || '').replace(/\n/g, ' '))}</div>
-      </div>
-    `).join('');
-  } catch (e) {}
-}
-
-async function jumpToCard(id) {
-  searchDrawer.classList.remove("open");
-  const existing = document.querySelector(`[data-id="${id}"]`);
-  if (existing) {
-    existing.scrollIntoView({ behavior: 'smooth' });
-  } else if (sb) {
-    const { data } = await sb.from('kinetic_wall').select('*').eq('id', id).maybeSingle();
-    if (data) {
-      feed.prepend(card(data));
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }
-}
-
-/* =========================================================================
-   9. PERMALINK INITIALIZER
-   ========================================================================= */
-window.addEventListener("DOMContentLoaded", async () => {
-  const hash = window.location.hash;
-  if (hash.startsWith("#p=") && sb) {
-    const targetId = hash.replace("#p=", "").trim();
-    if (targetId) {
-      try {
-        const { data } = await sb.from('kinetic_wall').select('*').eq('id', targetId).maybeSingle();
-        if (data) {
-          loadedIds.add(data.id);
-          feed.appendChild(card(data));
-        }
-      } catch (e) {}
-    }
-  }
-  load();
+  next();
 });
 </script>
 </body>

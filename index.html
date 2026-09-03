@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>TypeForge — The Kinetic Wall</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@400;600;700&family=Syne:wght@800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{--bg:#000;--font-display:'Syne',-apple-system,sans-serif;--font-body:'Space Grotesk',-apple-system,sans-serif;--font-mono:'JetBrains Mono',monospace;--card-accent:#00f3ff;--card-accent-glow:rgba(0,243,255,.35);--card-bg:#03070d;--card-text:#fff;--card-sub:rgba(255,255,255,.7)}
+    [data-theme=neon-cyan]{--card-accent:#00f3ff;--card-accent-glow:rgba(0,243,255,.4);--card-bg:#02060b;--card-text:#fff;--card-sub:#8ea8c3}
+    [data-theme=electric-crimson]{--card-accent:#ff0044;--card-accent-glow:rgba(255,0,68,.4);--card-bg:#0d0205;--card-text:#fff;--card-sub:#c98897}
+    [data-theme=matrix-green]{--card-accent:#00ff66;--card-accent-glow:rgba(0,255,102,.35);--card-bg:#010803;--card-text:#eafff0;--card-sub:#78a883}
+    [data-theme=solar-amber]{--card-accent:#ffaa00;--card-accent-glow:rgba(255,170,0,.4);--card-bg:#0a0701;--card-text:#fffdf5;--card-sub:#b8a688}
+    [data-theme=stark-monochrome]{--card-accent:#fff;--card-accent-glow:rgba(255,255,255,.25);--card-bg:#000;--card-text:#fff;--card-sub:#888}
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    html,body{width:100%;height:100%;background:var(--bg);color:#fff;font-family:var(--font-body);overflow:hidden;position:fixed}
+    header{position:fixed;top:0;left:0;right:0;height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100;background:linear-gradient(180deg,rgba(0,0,0,.85),rgba(0,0,0,0));pointer-events:none}
+    .hud-element{pointer-events:auto}.brand{font-family:var(--font-display);font-size:19px;font-weight:900;letter-spacing:2px;color:#fff;text-transform:uppercase;text-decoration:none;display:flex;align-items:center;gap:8px}.brand-dot{width:8px;height:8px;background:#00f3ff;border-radius:50%;box-shadow:0 0 10px #00f3ff}
+    .hud-controls{display:flex;align-items:center;gap:10px}.btn-hud{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);backdrop-filter:blur(12px);color:#fff;font-family:var(--font-mono);font-size:12px;font-weight:700;padding:8px 14px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.2s}.btn-hud:active{transform:scale(.96)}.btn-inscribe{background:#fff;color:#000;border:none}.btn-inscribe:hover{background:#00f3ff;box-shadow:0 0 16px rgba(0,243,255,.5)}
+    #feed-viewport{width:100vw;height:100dvh;overflow-y:scroll;scroll-snap-type:y mandatory;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;position:relative}
+    .feed-card{width:100vw;height:100dvh;scroll-snap-align:start;scroll-snap-stop:always;position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:80px 24px;background:var(--card-bg);contain:layout paint;content-visibility:auto;contain-intrinsic-size:100vh;overflow:hidden}
+    .card-glow{position:absolute;width:min(90vw,600px);height:min(90vw,600px);border-radius:50%;background:radial-gradient(circle,var(--card-accent-glow),rgba(0,0,0,0) 70%);filter:blur(60px);pointer-events:none;z-index:1;opacity:.35;transform:translate(-50%,-50%);top:50%;left:50%}
+    .card-body{position:relative;z-index:2;width:100%;max-width:860px;display:flex;flex-direction:column;align-items:center;text-align:center}.card-meta{font-family:var(--font-mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--card-sub);margin-bottom:24px;display:flex;align-items:center;gap:10px}.badge-serial{padding:3px 8px;background:rgba(255,255,255,.08);border-radius:4px;color:#fff}
+    .card-headline{font-family:var(--font-display);font-size:clamp(32px,6.8vw,72px);font-weight:900;line-height:1.05;letter-spacing:-1.5px;text-transform:uppercase;color:var(--card-text);word-break:break-word;margin-bottom:18px;will-change:transform,opacity}.card-headline .accent{color:var(--card-accent);text-shadow:0 0 25px var(--card-accent-glow);display:inline-block}.card-subtitle{font-size:clamp(15px,2vw,19px);color:var(--card-sub);max-width:600px;line-height:1.5;font-weight:400;margin-bottom:28px}.card-actions-wrapper{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:12px}
+    .voice-pill,.link-pill{display:flex;align-items:center;gap:10px;border-radius:999px;cursor:pointer;backdrop-filter:blur(12px);transition:.2s}.voice-pill{background:rgba(255,255,255,.07);border:1px solid var(--card-accent);padding:9px 18px;box-shadow:0 0 16px var(--card-accent-glow)}.voice-pill:active{transform:scale(.96)}.voice-pill svg{width:16px;height:16px;fill:var(--card-accent)}.voice-text,.link-pill{font-family:var(--font-mono);font-size:12px;font-weight:700}.voice-text{color:#fff}.voice-wave{display:flex;align-items:center;gap:3px;height:12px}.wave-bar{width:2.5px;height:4px;background:var(--card-accent);border-radius:2px}.voice-pill.playing .wave-bar:nth-child(1){animation:wave .6s infinite alternate}.voice-pill.playing .wave-bar:nth-child(2){animation:wave .8s .2s infinite alternate}.voice-pill.playing .wave-bar:nth-child(3){animation:wave .5s .4s infinite alternate}.voice-pill.playing .wave-bar:nth-child(4){animation:wave .7s .1s infinite alternate}@keyframes wave{to{height:14px}}
+    .link-pill{gap:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.2);padding:9px 18px;text-decoration:none;color:#fff}.link-pill:hover,.link-pill:active{background:#fff;color:#000;border-color:#fff}
+    .card-dock{position:absolute;right:18px;bottom:36px;display:flex;flex-direction:column;gap:14px;z-index:10}.dock-btn{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);backdrop-filter:blur(10px);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px}.dock-btn:active{transform:scale(.92)}.dock-btn svg{width:18px;height:18px;fill:#fff}.dock-btn.liked svg{fill:#ff0044}.dock-btn span{font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,.8)}
+    .motion-slam .card-headline{opacity:0;transform:scale(1.4);filter:blur(12px);transition:.6s cubic-bezier(.16,1,.3,1)}.feed-card.active.motion-slam .card-headline{opacity:1;transform:scale(1);filter:blur(0)}.motion-staccato .card-headline{opacity:0;letter-spacing:-6px;transform:translateY(16px);transition:.5s cubic-bezier(.2,.9,.3,1.2)}.feed-card.active.motion-staccato .card-headline{opacity:1;letter-spacing:-1.5px;transform:translateY(0)}.motion-split .card-headline{opacity:0;clip-path:polygon(0 0,100% 0,100% 0,0 0);transform:translateY(30px);transition:.65s}.feed-card.active.motion-split .card-headline{opacity:1;clip-path:polygon(0 0,100% 0,100% 100%,0 100%);transform:translateY(0)}.motion-scramble .card-headline{opacity:0;transform:scale(.96);transition:.3s}.feed-card.active.motion-scramble .card-headline{opacity:1;transform:scale(1)}
+    #empty-state{display:none;width:100vw;height:100dvh;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}#empty-state h1{font-family:var(--font-display);font-size:clamp(30px,6vw,56px);text-transform:uppercase;margin-bottom:12px}#empty-state p{color:rgba(255,255,255,.6);max-width:440px;margin-bottom:28px;font-size:15px}
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(16px);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}.modal-overlay.open{display:flex}.modal-sheet{width:100%;max-width:520px;max-height:88vh;background:#0c0c0e;border:1px solid rgba(255,255,255,.15);border-radius:20px;overflow-y:auto;padding:28px 24px;display:flex;flex-direction:column;gap:18px}.modal-header{display:flex;align-items:center;justify-content:space-between}.modal-title{font-family:var(--font-display);font-size:22px;font-weight:800;text-transform:uppercase}.btn-close{background:none;border:none;color:#fff;font-size:26px;cursor:pointer}.form-group{display:flex;flex-direction:column;gap:6px}.form-group label{font-family:var(--font-mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.5)}.form-input,.form-select{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:12px 14px;border-radius:10px;color:#fff;font-family:var(--font-body);font-size:15px;outline:none}.form-input:focus,.form-select:focus{border-color:#00f3ff}
+    .recorder-box{border:1px dashed rgba(255,255,255,.2);border-radius:14px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:12px;background:rgba(255,255,255,.02)}.recorder-box.locked{border-color:rgba(255,0,68,.4)}.rec-btn{width:52px;height:52px;border-radius:50%;background:#ff0044;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer}.rec-btn.recording{animation:pulse 1s infinite alternate}@keyframes pulse{to{transform:scale(1.1);box-shadow:0 0 20px #ff0044}}.rec-timer{font-family:var(--font-mono);font-size:13px;color:#ff0044}.btn-submit{background:#00f3ff;color:#000;border:none;padding:14px;border-radius:12px;font-family:var(--font-mono);font-weight:700;font-size:14px;cursor:pointer;text-transform:uppercase}.btn-submit:disabled{opacity:.4;cursor:not-allowed}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:rgba(255,255,255,.95);color:#000;font-family:var(--font-mono);font-size:12px;font-weight:700;padding:10px 20px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.5);z-index:300;transition:.3s;pointer-events:none}#toast.show{transform:translateX(-50%) translateY(0)}
+    .demo-note{position:absolute;bottom:18px;left:18px;z-index:20;font:10px var(--font-mono);color:#ffffff55;letter-spacing:1px}
+  </style>
+</head>
+<body>
+<header><a href="#" class="brand hud-element"><div class="brand-dot"></div>TypeForge</a><div class="hud-controls hud-element"><button class="btn-hud" id="openSearchBtn">⌕ SEARCH</button><button class="btn-hud btn-inscribe" id="openInscribeBtn">+ INSCRIBE</button></div></header>
+<main id="feed-viewport"></main>
+<div id="empty-state"><h1>The Wall Is Silent</h1><p>Zero records found. Be the first pioneer to permanently inscribe a kinetic monument.</p><button class="btn-hud btn-inscribe" onclick="document.getElementById('openInscribeBtn').click()">+ INSCRIBE RECORD #0001</button></div>
+<div class="modal-overlay" id="inscribeModal"><div class="modal-sheet">
+<div class="modal-header"><div class="modal-title">Etch Inscription</div><button class="btn-close" onclick="closeModals()">&times;</button></div>
+<div class="form-group"><label>Headline (Max 100 chars)</label><input id="inputHeadline" class="form-input" placeholder="e.g. FOCUS OVER NOISE" maxlength="100"></div>
+<div class="form-group"><label>Accent Word</label><input id="inputAccent" class="form-input" placeholder="e.g. FOCUS" maxlength="30"></div>
+<div class="form-group"><label>Subtitle / Manifesto</label><textarea id="inputSubtitle" class="form-input" rows="2" placeholder="State your truth..." maxlength="240"></textarea></div>
+<div class="form-group"><label>Author / Handle</label><input id="inputAuthor" class="form-input" placeholder="@yourhandle" maxlength="40"></div>
+<div class="form-group"><label>Outbound URL / Ad Link</label><input id="inputUrl" type="url" class="form-input" placeholder="https://yourlink.com"></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="form-group"><label>Theme</label><select id="selectTheme" class="form-select"><option value="neon-cyan">Neon Cyan</option><option value="electric-crimson">Electric Crimson</option><option value="matrix-green">Matrix Green</option><option value="solar-amber">Solar Amber</option><option value="stark-monochrome">Stark Monochrome</option></select></div><div class="form-group"><label>Kinetic Style</label><select id="selectMotion" class="form-select"><option value="slam">Kinetic Slam</option><option value="staccato">Staccato Track</option><option value="split">Split Slice</option><option value="scramble">Matrix Scramble</option></select></div></div>
+<div class="form-group"><label>Voice Note — optional, 1 minute</label><div class="recorder-box" id="recorderBox"><button type="button" class="rec-btn" id="recToggleBtn"><svg id="recIcon" width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg></button><div class="rec-timer" id="recTimer">00:00 / 01:00</div><audio id="audioPreview" controls style="display:none;width:100%;height:36px"></audio></div></div>
+<button class="btn-submit" id="submitPostBtn">Inscribe to Wall</button>
+</div></div>
+<div class="modal-overlay" id="searchModal"><div class="modal-sheet"><div class="modal-header"><div class="modal-title">Search Inscriptions</div><button class="btn-close" onclick="closeModals()">&times;</button></div><div class="form-group"><input id="searchInput" class="form-input" placeholder="Search keywords, authors, or topics..."></div><div id="searchResults" style="display:flex;flex-direction:column;gap:8px"></div></div></div>
+<div id="toast">ACTION COMPLETE</div>
+
+<script>
+/* ============================================================
+   TYPEFORGE SUPABASE CONFIGURATION
+   ------------------------------------------------------------
+   Replace ONLY these two values with your Supabase project
+   URL and publishable/anon key.
+
+   NEVER put the service-role/secret key here.
+   ============================================================ */
+const SUPABASE_URL='https://ldrwqpusfnssbzvqthfp.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkcndxcHVzZm5zc2J6dnF0aGZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzNzUxMDYsImV4cCI6MjEwMzk1MTEwNn0.t4B5plmjqt25A6bXN7i95i5u9wuBJjjiV-JS97YwQk0';
+
+const supabase =
+  (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && window.supabase)
+    ? window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false
+          }
+        }
+      )
+    : null;
+
+const INSCRIBE_FUNCTION_URL =
+  SUPABASE_URL !== 'YOUR_SUPABASE_URL'
+    ? `${SUPABASE_URL}/functions/v1/inscribe`
+    : null;
+const feedViewport=document.getElementById('feed-viewport'),emptyState=document.getElementById('empty-state');
+let currentPage=0,isLoading=false,hasMore=true,currentAudio=null,currentVoicePill=null,loadedCardIds=new Set();
+const DEMO=[
+{id:'demo1',serial_no:1,headline:'FOCUS OVER NOISE',accent_word:'FOCUS',subtitle:'A permanent kinetic wall for ideas, statements, brands and moments.',author_handle:'TYPEFORGE',theme:'neon-cyan',motion_style:'slam',likes_count:42},
+{id:'demo2',serial_no:2,headline:'MAKE THE INTERNET FEEL ALIVE',accent_word:'ALIVE',subtitle:'Not another feed. Every inscription becomes a visual monument.',author_handle:'KINETIC',theme:'electric-crimson',motion_style:'staccato',likes_count:27},
+{id:'demo3',serial_no:3,headline:'BUILD SOMETHING PEOPLE REMEMBER',accent_word:'REMEMBER',subtitle:'Publish a thought. Attach a voice. Add a destination. Leave a mark.',author_handle:'FORGE',theme:'matrix-green',motion_style:'split',likes_count:18}
+];
+const observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('active');if(e.target.classList.contains('motion-scramble'))scramble(e.target.querySelector('.card-headline'));history.replaceState(null,null,'#p='+e.target.dataset.id)}else{const a=e.target.querySelector('audio');if(a){a.pause();a.currentTime=0}}}),{root:feedViewport,threshold:.6});
+function esc(s=''){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function escRx(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
+function sanitizeUrl(u){if(!u)return null;try{let x=new URL(/^https?:/i.test(u)?u:'https://'+u);return /^https?:$/.test(x.protocol)?x.href:null}catch{return null}}
+function cardEl(item,index){
+ const c=document.createElement('article');c.className='feed-card motion-'+(item.motion_style||'slam');c.dataset.theme=item.theme||'neon-cyan';c.dataset.id=item.id;c.dataset.index=index;
+ let h=esc(item.headline||''),a=esc(item.accent_word||'').trim();if(a)h=h.replace(new RegExp('('+escRx(a)+')','gi'),'<span class="accent">$1</span>');
+ let voice=item.audio_url?`<div class="voice-pill" onclick="toggleVoice(this,'${esc(item.id)}')"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><span class="voice-text">VOICE NOTE</span><div class="voice-wave"><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i></div><audio src="${esc(item.audio_url)}" preload="none" onended="audioEnded(this)"></audio></div>`:'';
+ let u=sanitizeUrl(item.outbound_url),link=u?`<a class="link-pill" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span>WEBSITE</span> ↗</a>`:'';
+ c.innerHTML=`<div class="card-glow"></div><div class="card-body"><div class="card-meta"><span class="badge-serial">#${String(item.serial_no||index+1).padStart(4,'0')}</span><span>BY ${esc(item.author_handle||'ANONYMOUS')}</span>${item.is_pinned?'<span style="color:var(--card-accent)">PINNED</span>':''}</div><h2 class="card-headline">${h}</h2>${item.subtitle?`<p class="card-subtitle">${esc(item.subtitle)}</p>`:''}<div class="card-actions-wrapper">${voice}${link}</div></div><div class="card-dock"><button class="dock-btn" onclick="likeCard('${esc(item.id)}',this)"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><span>${item.likes_count||0}</span></button><button class="dock-btn" onclick="shareCard('${esc(item.id)}')">↗<span>SHARE</span></button></div>`;
+ return c;
+}
+function render(item,prepend=false){if(loadedCardIds.has(item.id))return;loadedCardIds.add(item.id);let c=cardEl(item,loadedCardIds.size-1);prepend?feedViewport.prepend(c):feedViewport.append(c);observer.observe(c)}
+async function loadCards(reset=false){
+ if(!supabase){if(reset){feedViewport.innerHTML='';loadedCardIds.clear()}DEMO.forEach(render);return}
+ if(isLoading||(!hasMore&&!reset))return;isLoading=true;if(reset){currentPage=0;hasMore=true;feedViewport.innerHTML='';loadedCardIds.clear()}
+ try{let {data,error}=await supabase.from('kinetic_wall').select('*').order('is_pinned',{ascending:false}).order('created_at',{ascending:false}).range(currentPage*10,currentPage*10+9);if(error)throw error;if(!data?.length){hasMore=false;if(!loadedCardIds.size)emptyState.style.display='flex';return}if(data.length<10)hasMore=false;data.forEach(render);currentPage++}catch(e){console.error(e)}finally{isLoading=false}
+}
+async function toggleVoice(pill,id){let a=pill.querySelector('audio');if(currentAudio&&currentAudio!==a){currentAudio.pause();currentVoicePill?.classList.remove('playing')}if(a.paused){try{await a.play();pill.classList.add('playing');currentAudio=a;currentVoicePill=pill}catch(e){showToast('PLAYBACK FAILED')}}else{a.pause();pill.classList.remove('playing')}}
+function audioEnded(a){a.closest('.voice-pill')?.classList.remove('playing')}
+async function likeCard(id,b){if(b.classList.contains('liked'))return;b.classList.add('liked');let s=b.querySelector('span');s.textContent=+s.textContent+1;if(supabase)supabase.rpc('increment_likes',{target_id:id}).catch(()=>{})}
+function shareCard(id){let u=location.origin+location.pathname+'#p='+id;if(navigator.share)navigator.share({title:'TypeForge',url:u}).catch(()=>{});else navigator.clipboard?.writeText(u).then(()=>showToast('PERMALINK COPIED'))}
+function showToast(m){let t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
+const inscribeModal=document.getElementById('inscribeModal'),searchModal=document.getElementById('searchModal');
+document.getElementById('openInscribeBtn').onclick=()=>inscribeModal.classList.add('open');document.getElementById('openSearchBtn').onclick=()=>searchModal.classList.add('open');
+function closeModals(){inscribeModal.classList.remove('open');searchModal.classList.remove('open');stopRecording()}
+let recorder=null,chunks=[],blob=null,timer=null,seconds=0;
+const recBtn=document.getElementById('recToggleBtn'),recTimer=document.getElementById('recTimer'),preview=document.getElementById('audioPreview');
+recBtn.onclick=async()=>{if(recorder?.state==='recording')stopRecording();else startRecording()};
+async function startRecording(){try{let stream=await navigator.mediaDevices.getUserMedia({audio:true});chunks=[];let mime=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':'';recorder=new MediaRecorder(stream,mime?{mimeType:mime}:{});recorder.ondataavailable=e=>e.data.size&&chunks.push(e.data);recorder.onstop=()=>{blob=new Blob(chunks,{type:mime||'audio/webm'});preview.src=URL.createObjectURL(blob);preview.style.display='block'};recorder.start();seconds=0;recBtn.classList.add('recording');timer=setInterval(()=>{seconds++;recTimer.textContent=`00:${String(seconds).padStart(2,'0')} / 01:00`;if(seconds>=60)stopRecording()},1000)}catch(e){showToast('MICROPHONE ACCESS DENIED')}}
+function stopRecording(){if(recorder?.state==='recording')recorder.stop();recorder?.stream?.getTracks().forEach(t=>t.stop());clearInterval(timer);recBtn.classList.remove('recording')}
+document.getElementById('submitPostBtn').onclick=async()=>{
+  const submitBtn=document.getElementById('submitPostBtn');
+
+  const headline=document.getElementById('inputHeadline').value.trim();
+  const accent_word=document.getElementById('inputAccent').value.trim() || null;
+  const subtitle=document.getElementById('inputSubtitle').value.trim() || null;
+  const author_handle=document.getElementById('inputAuthor').value.trim() || 'ANONYMOUS';
+  const outbound_url=sanitizeUrl(document.getElementById('inputUrl').value.trim());
+  const theme=document.getElementById('selectTheme').value;
+  const motion_style=document.getElementById('selectMotion').value;
+
+  if(!headline){
+    showToast('HEADLINE IS REQUIRED');
+    return;
+  }
+
+  if(!supabase || !INSCRIBE_FUNCTION_URL){
+    showToast('SUPABASE IS NOT CONFIGURED');
+    return;
+  }
+
+  if(submitBtn.disabled)return;
+
+  submitBtn.disabled=true;
+  submitBtn.textContent='ETCHING...';
+
+  let uploadedPath=null;
+
+  try{
+    /*
+      VOICE IS OPTIONAL.
+
+      The audio file is uploaded only when the user actually
+      recorded one. Text-only cards never touch the voice-cap
+      database lock.
+    */
+    let audioUrl=null;
+
+    if(blob){
+      const extension =
+        blob.type.includes('mp4') ? 'mp4' :
+        blob.type.includes('aac') ? 'aac' :
+        blob.type.includes('ogg') ? 'ogg' :
+        blob.type.includes('mpeg') ? 'mp3' :
+        'webm';
+
+      const path =
+        `voice_${crypto.randomUUID()}.${extension}`;
+
+      uploadedPath=path;
+
+      const uploadResult =
+        await supabase.storage
+          .from('voice_notes')
+          .upload(
+            path,
+            blob,
+            {
+              contentType:blob.type || 'audio/webm',
+              cacheControl:'31536000',
+              upsert:false
+            }
+          );
+
+      if(uploadResult.error){
+        throw new Error('VOICE_UPLOAD_FAILED');
+      }
+
+      audioUrl =
+        supabase.storage
+          .from('voice_notes')
+          .getPublicUrl(path)
+          .data
+          .publicUrl;
+    }
+
+    /*
+      Send creation through the Edge Function.
+      Never insert directly into kinetic_wall from the browser.
+    */
+    const idempotencyKey=crypto.randomUUID();
+
+    const response=await fetch(
+      INSCRIBE_FUNCTION_URL,
+      {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'apikey':SUPABASE_ANON_KEY,
+          'X-Client-Info':'typeforge-web',
+          'X-Idempotency-Key':idempotencyKey
+        },
+        body:JSON.stringify({
+          headline,
+          accent_word,
+          subtitle,
+          author_handle,
+          outbound_url,
+          theme,
+          motion_style,
+          audio_url:audioUrl
+        })
+      }
+    );
+
+    let result=null;
+
+    try{
+      result=await response.json();
+    }catch{
+      result=null;
+    }
+
+    if(!response.ok){
+      if(result?.error==='VOICE_CAP_EXHAUSTED'){
+        throw new Error('VOICE_CAP_EXHAUSTED');
+      }
+
+      if(result?.error==='RATE_LIMITED'){
+        throw new Error('RATE_LIMITED');
+      }
+
+      throw new Error(
+        result?.error || 'INSCRIPTION_FAILED'
+      );
+    }
+
+    if(!result?.success || !result?.card){
+      throw new Error('INVALID_SERVER_RESPONSE');
+    }
+
+    /*
+      The database is the source of truth.
+      Use the returned card exactly as stored.
+    */
+    const item=result.card;
+
+    render(item);
+
+    closeModals();
+    resetForm();
+
+    showToast('PERMANENTLY ETCHED');
+
+    requestAnimationFrame(()=>{
+      const newCard=
+        document.querySelector(
+          `[data-id="${CSS.escape(item.id)}"]`
+        );
+
+      newCard?.scrollIntoView({
+        behavior:'smooth',
+        block:'start'
+      });
+    });
+
+  }catch(error){
+    console.error('TypeForge inscription error:',error);
+
+    const code=error instanceof Error
+      ? error.message
+      : 'INSCRIPTION_FAILED';
+
+    if(code==='VOICE_CAP_EXHAUSTED'){
+      showToast('ALL 1,000 VOICE SLOTS ARE USED');
+    }else if(code==='RATE_LIMITED'){
+      showToast('TOO MANY INSCRIPTIONS — TRY LATER');
+    }else if(code==='VOICE_UPLOAD_FAILED'){
+      showToast('VOICE UPLOAD FAILED');
+    }else if(code==='ORIGIN_NOT_ALLOWED'){
+      showToast('SITE ORIGIN NOT ALLOWED');
+    }else{
+      showToast('SUBMISSION FAILED');
+    }
+
+  }finally{
+    submitBtn.disabled=false;
+    submitBtn.textContent='Inscribe to Wall';
+  }
+};
+function resetForm(){['inputHeadline','inputAccent','inputSubtitle','inputAuthor','inputUrl'].forEach(id=>document.getElementById(id).value='');blob=null;preview.src='';preview.style.display='none';recTimer.textContent='00:00 / 01:00'}
+let debounce;document.getElementById('searchInput').oninput=e=>{clearTimeout(debounce);debounce=setTimeout(()=>search(e.target.value),250)};
+async function search(q){q=q.trim();let data=[];if(supabase&&q){let r=await supabase.from('kinetic_wall').select('id,serial_no,headline,author_handle').or(`headline.ilike.%${q}%,subtitle.ilike.%${q}%,author_handle.ilike.%${q}%`).limit(10);data=r.data||[]}else data=DEMO.filter(x=>(x.headline+x.subtitle+x.author_handle).toLowerCase().includes(q.toLowerCase()));document.getElementById('searchResults').innerHTML=data.map(x=>`<div style="padding:12px;background:#ffffff0d;border-radius:8px;cursor:pointer" onclick="jump('${esc(x.id)}')"><small>#${String(x.serial_no).padStart(4,'0')} BY ${esc(x.author_handle)}</small><div style="font-weight:700">${esc(x.headline)}</div></div>`).join('')||'<div style="color:#888">NO RESULTS</div>'}
+function jump(id){closeModals();let x=document.querySelector(`[data-id="${CSS.escape(id)}"]`);if(x)x.scrollIntoView({behavior:'smooth'});else if(supabase)loadCards()}
+function scramble(el){if(!el||el.dataset.scrambling)return;el.dataset.scrambling=1;let html=el.innerHTML,text=el.textContent,i=0;let iv=setInterval(()=>{el.textContent=text.split('').map((c,n)=>n<i?c:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random()*36)]).join('');if(i++>=text.length){clearInterval(iv);el.innerHTML=html;delete el.dataset.scrambling}},30)}
+window.addEventListener('DOMContentLoaded',()=>{
+  if(!supabase){
+    showToast('ADD SUPABASE URL + ANON KEY');
+  }
+  loadCards();
+});
+</script>
+</body>
+</html>

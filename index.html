@@ -198,10 +198,10 @@ REMAINS FOREVER</textarea>
 /* =========================================================================
    1. SUPABASE CLIENT
    ========================================================================= */
-const SUPABASE_URL = 'https://ldrwqpusfnssbzvqthfp.sb.co';
+const SUPABASE_URL = 'https://ldrwqpusfnssbzvqthfp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkcndxcHVzZm5zc2J6dnF0aGZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzNzUxMDYsImV4cCI6MjEwMzk1MTEwNn0.t4B5plmjqt25A6bXN7i95i5u9wuBJjjiV-JS97YwQk0';
 
-const sb = (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && window.supabase)
+const sb = (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY' && window.supabase)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
@@ -555,7 +555,7 @@ function card(post) {
     </div>
     <div class="card-info">
       <span>STYLE: ${(post.anim || 'kinetic_slam').replaceAll("_", " ").toUpperCase()}</span>
-      <span>THEME: ${(THEMES[post.theme] || THEMES.cyber).name}</span>
+      <span>THEME: ${(THEMES[post.theme] || ({'neon-cyan':{name:'CYBER NEON'},'electric-crimson':{name:'HYPER RED'},'matrix-green':{name:'TERMINAL'},'solar-amber':{name:'LUXURY GOLD'},'stark-monochrome':{name:'SWISS MONO'}}[post.theme] || THEMES.cyber)).name}</span>
     </div>
   `;
 
@@ -564,12 +564,12 @@ function card(post) {
     data: {
       headline: post.headline,
       accentWord: post.accent_word || post.accentWord,
-      tagline: post.tagline,
+      tagline: post.tagline || post.author_handle || 'STATEMENT',
       subtitle: post.subtitle
     },
     theme: post.theme,
     bg: post.bg || 'warp',
-    anim: post.anim
+    anim: post.anim || ({slam:'kinetic_slam',staccato:'stagger_pop',split:'isometric_3d',scramble:'cyber_scramble'}[post.motion_style] || 'kinetic_slam')
   };
   canvasObserver.observe(c);
   return el;
@@ -878,6 +878,7 @@ drawer.onclick = e => {
 btnCommit.onclick = async () => {
   let d = form();
   if (!d.headline) { toast("Headline text is required"); return; }
+  if (!sb) { toast("Supabase is not configured"); return; }
 
   btnCommit.disabled = true;
   btnCommit.textContent = "INSCRIBING FOREVER...";
@@ -885,52 +886,65 @@ btnCommit.onclick = async () => {
   try {
     let audioUrl = null;
 
-    if (recordedBlob && sb) {
+    if (recordedBlob) {
       if (voiceCapReached) {
         toast("Voice cap reached. Saving text only.");
       } else {
         const ext = activeMimeType.includes('mp4') ? 'mp4' : 'webm';
-        const fileKey = `voice_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+        const fileKey = `voice_${crypto.randomUUID ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).substring(2, 8)}.${ext}`;
         const cleanType = (recordedBlob.type || activeMimeType || 'audio/webm').split(';')[0];
-
-        const { error: uploadError } = await sb.storage
-          .from('voice_notes')
-          .upload(fileKey, recordedBlob, { contentType: cleanType });
-
+        const { error: uploadError } = await sb.storage.from('voice_notes').upload(fileKey, recordedBlob, { contentType: cleanType, upsert: false });
         if (uploadError) throw uploadError;
         const { data: urlData } = sb.storage.from('voice_notes').getPublicUrl(fileKey);
         audioUrl = urlData.publicUrl;
       }
     }
 
-    if (sb) {
-      const { data: inserted, error: insertError } = await sb
-        .from('kinetic_wall')
-        .insert([{
-          headline: d.headline,
-          accent_word: d.accentWord,
-          tagline: d.tagline,
-          subtitle: d.subtitle,
-          anim: d.anim,
-          theme: pTheme,
-          bg: pBg,
-          outbound_url: d.url,
-          audio_url: audioUrl
-        }])
-        .select()
-        .single();
+    const themeMap = { cyber:'neon-cyan', gold:'solar-amber', matrix:'matrix-green', acid:'neon-cyan', crimson:'electric-crimson', minimal:'stark-monochrome' };
+    const motionMap = { kinetic_slam:'slam', cyber_scramble:'scramble', neon_surge:'slam', stagger_pop:'staccato', isometric_3d:'split', glitch_rgb:'scramble', minimal_drift:'split' };
 
-      if (insertError) throw insertError;
-      if (inserted) feed.prepend(card(inserted));
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/inscribe`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'X-Client-Info': 'typeforge-web',
+        'X-Idempotency-Key': (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`)
+      },
+      body: JSON.stringify({
+        headline: d.headline,
+        accent_word: d.accentWord,
+        subtitle: d.subtitle,
+        author_handle: d.tagline || 'ORIGIN',
+        theme: themeMap[pTheme] || 'neon-cyan',
+        motion_style: motionMap[d.anim] || 'slam',
+        outbound_url: d.url || null,
+        audio_url: audioUrl
+      })
+    });
+
+    let result = null;
+    try { result = await response.json(); } catch (_) {}
+    if (!response.ok || !result?.success) {
+      if (response.status === 409) throw new Error('Voice capacity reached. Please submit without voice.');
+      if (response.status === 429) throw new Error('Too many inscriptions. Please wait a moment and try again.');
+      throw new Error(result?.error || `Inscribe failed (${response.status})`);
+    }
+
+    const inserted = result.card;
+    if (inserted) {
+      loadedIds.add(inserted.id);
+      feed.prepend(card(inserted));
     }
 
     drawer.classList.remove("open");
     resetCreatorForm();
     scrollTo({ top: 0, behavior: "smooth" });
     toast("✦ PERMANENTLY INSCRIBED ONTO WALL");
+    load(true);
   } catch (err) {
     console.error(err);
-    toast("Commit failed: " + err.message);
+    toast("Commit failed: " + (err?.message || 'Unknown error'));
   } finally {
     btnCommit.disabled = false;
     btnCommit.textContent = "COMMIT TO WALL FOREVER";
@@ -975,8 +989,8 @@ async function performSearch() {
   try {
     const { data } = await sb
       .from('kinetic_wall')
-      .select('id, serial_no, headline, tagline')
-      .or(`headline.ilike.%${q}%,subtitle.ilike.%${q}%,tagline.ilike.%${q}%`)
+      .select('id, serial_no, headline, accent_word')
+      .or(`headline.ilike.%${q}%,subtitle.ilike.%${q}%,accent_word.ilike.%${q}%,author_handle.ilike.%${q}%`)
       .limit(8);
 
     if (!data || data.length === 0) {
@@ -986,7 +1000,7 @@ async function performSearch() {
 
     searchResults.innerHTML = data.map(item => `
       <div style="padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:var(--r);cursor:pointer;transition:.15s;" onclick="jumpToCard('${item.id}')">
-        <div style="font-family:var(--mono);font-size:9.5px;color:var(--cyan)">#${String(item.serial_no || 1).padStart(4, '0')} · ${escapeHTML(item.tagline || 'STATEMENT')}</div>
+        <div style="font-family:var(--mono);font-size:9.5px;color:var(--cyan)">#${String(item.serial_no || 1).padStart(4, '0')} · ${escapeHTML(item.accent_word || 'STATEMENT')}</div>
         <div style="font-family:var(--disp);font-size:13px;font-weight:700;margin-top:2px;">${escapeHTML((item.headline || '').replace(/\n/g, ' '))}</div>
       </div>
     `).join('');

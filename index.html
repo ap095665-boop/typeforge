@@ -6,7 +6,7 @@
 <title>TYPE FORGE — Permanent Kinetic Wall</title>
 
 <!-- Supabase Client v2 -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@sb/sb-js@2"></script>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Syne:wght@700;800&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
@@ -198,10 +198,10 @@ REMAINS FOREVER</textarea>
 /* =========================================================================
    1. SUPABASE CLIENT
    ========================================================================= */
-const SUPABASE_URL = 'https://ldrwqpusfnssbzvqthfp.supabase.co';
+const SUPABASE_URL = 'https://ldrwqpusfnssbzvqthfp.sb.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkcndxcHVzZm5zc2J6dnF0aGZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzNzUxMDYsImV4cCI6MjEwMzk1MTEwNn0.t4B5plmjqt25A6bXN7i95i5u9wuBJjjiV-JS97YwQk0';
 
-const supabase = (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && window.supabase)
+const sb = (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && window.supabase)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
@@ -586,12 +586,12 @@ async function load(reset = false) {
     hasMore = true;
   }
 
-  if (supabase) {
+  if (sb) {
     const from = currentPage * BATCH;
     const to = from + BATCH - 1;
 
     try {
-      const { data, error, count } = await supabase
+      const { data, error, count } = await sb
         .from('kinetic_wall')
         .select('*', { count: 'exact' })
         .order('is_pinned', { ascending: false })
@@ -658,13 +658,13 @@ function getSafeMimeType() {
 }
 
 async function checkVoiceCap() {
-  if (!supabase) return;
+  if (!sb) return;
   const badge = document.getElementById("voiceSlotBadge");
   const btn = document.getElementById("recToggleBtn");
   const timer = document.getElementById("recTimer");
 
   try {
-    const { count, error } = await supabase
+    const { count, error } = await sb
       .from('kinetic_wall')
       .select('*', { count: 'exact', head: true })
       .not('audio_url', 'is', null);
@@ -780,7 +780,7 @@ function toggleVoice(id, pill) {
     audio.play().then(() => {
       pill.classList.add("playing");
       currentAudio = audio;
-      if (supabase) supabase.rpc('increment_listens', { target_id: id }).catch(() => {});
+      if (sb) sb.rpc('increment_listens', { target_id: id }).catch(() => {});
     }).catch(() => toast("Audio playback blocked"));
   } else {
     audio.pause();
@@ -796,8 +796,8 @@ async function handleLike(id, btn) {
   btn.classList.add("liked");
   const num = btn.querySelector(".like-num");
   num.textContent = parseInt(num.textContent, 10) + 1;
-  if (supabase) {
-    await supabase.rpc('increment_likes', { target_id: id }).catch(() => {});
+  if (sb) {
+    await sb.rpc('increment_likes', { target_id: id }).catch(() => {});
   }
 }
 
@@ -809,8 +809,8 @@ function sharePost(id) {
 }
 
 function trackClick(id) {
-  if (supabase) {
-    supabase.rpc('increment_clicks', { target_id: id }).catch(() => {});
+  if (sb) {
+    sb.rpc('increment_clicks', { target_id: id }).catch(() => {});
   }
 }
 
@@ -885,7 +885,7 @@ btnCommit.onclick = async () => {
   try {
     let audioUrl = null;
 
-    if (recordedBlob && supabase) {
+    if (recordedBlob && sb) {
       if (voiceCapReached) {
         toast("Voice cap reached. Saving text only.");
       } else {
@@ -893,18 +893,18 @@ btnCommit.onclick = async () => {
         const fileKey = `voice_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
         const cleanType = (recordedBlob.type || activeMimeType || 'audio/webm').split(';')[0];
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await sb.storage
           .from('voice_notes')
           .upload(fileKey, recordedBlob, { contentType: cleanType });
 
         if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage.from('voice_notes').getPublicUrl(fileKey);
+        const { data: urlData } = sb.storage.from('voice_notes').getPublicUrl(fileKey);
         audioUrl = urlData.publicUrl;
       }
     }
 
-    if (supabase) {
-      const { data: inserted, error: insertError } = await supabase
+    if (sb) {
+      const { data: inserted, error: insertError } = await sb
         .from('kinetic_wall')
         .insert([{
           headline: d.headline,
@@ -968,12 +968,12 @@ searchInput.addEventListener("input", () => {
 
 async function performSearch() {
   const q = searchInput.value.replace(/[^a-zA-Z0-9\s]/g, '').trim();
-  if (!q || !supabase) {
+  if (!q || !sb) {
     searchResults.innerHTML = '';
     return;
   }
   try {
-    const { data } = await supabase
+    const { data } = await sb
       .from('kinetic_wall')
       .select('id, serial_no, headline, tagline')
       .or(`headline.ilike.%${q}%,subtitle.ilike.%${q}%,tagline.ilike.%${q}%`)
@@ -998,8 +998,8 @@ async function jumpToCard(id) {
   const existing = document.querySelector(`[data-id="${id}"]`);
   if (existing) {
     existing.scrollIntoView({ behavior: 'smooth' });
-  } else if (supabase) {
-    const { data } = await supabase.from('kinetic_wall').select('*').eq('id', id).maybeSingle();
+  } else if (sb) {
+    const { data } = await sb.from('kinetic_wall').select('*').eq('id', id).maybeSingle();
     if (data) {
       feed.prepend(card(data));
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1012,11 +1012,11 @@ async function jumpToCard(id) {
    ========================================================================= */
 window.addEventListener("DOMContentLoaded", async () => {
   const hash = window.location.hash;
-  if (hash.startsWith("#p=") && supabase) {
+  if (hash.startsWith("#p=") && sb) {
     const targetId = hash.replace("#p=", "").trim();
     if (targetId) {
       try {
-        const { data } = await supabase.from('kinetic_wall').select('*').eq('id', targetId).maybeSingle();
+        const { data } = await sb.from('kinetic_wall').select('*').eq('id', targetId).maybeSingle();
         if (data) {
           loadedIds.add(data.id);
           feed.appendChild(card(data));

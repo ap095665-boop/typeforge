@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<title>TYPE FORGE — Compositor Kinetic Engine</title>
+<title>TYPE FORGE — Kinetic Engine</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap');
@@ -16,19 +16,18 @@
   --r: 6px;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-/* STABLE, NATURAL OVERFLOW CONTAINER (NO SCROLL SNAPPING FIGHT) */
 html, body {
   width: 100%; height: 100%;
   overflow: hidden;
   background: var(--void); color: var(--text); font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
+  position: fixed;
 }
 ::selection { background: var(--cyan); color: #000; }
 button { cursor: pointer; border: none; background: none; color: inherit; font-family: inherit; }
 input, select, textarea { color: var(--text); background: transparent; border: none; outline: none; font-family: inherit; }
-::-webkit-scrollbar { display: none; }
 
 #topbar {
   position: fixed; top: 0; left: 0; right: 0; height: 56px; z-index: 100;
@@ -52,44 +51,50 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 }
 .create-btn:hover { filter: brightness(1.15); box-shadow: 0 0 16px rgba(72,232,255,0.35); }
 
-/* SMOOTH NATURAL VIEWPORT (NO JITTER / NO SHAKING) */
-#feedViewport {
-  width: 100vw;
-  height: 100dvh;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-  position: absolute;
-  inset: 0;
+/* MAIN STAGE (NO SCROLLING - ABSOLUTE VIEWPORT) */
+#mainStage {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 60px 16px 84px;
+  perspective: 1000px;
 }
 
-.card-page {
-  width: 100vw;
-  min-height: 100dvh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 14px 18px;
-  box-sizing: border-box;
-  contain: layout paint;
-  content-visibility: auto;
-  contain-intrinsic-size: 100dvh;
+/* THE ACTIVE CENTER CARD */
+.active-card-slot {
+  width: 100%; max-width: 440px; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
 }
 
 .feed-card {
   width: 100%;
-  max-width: 480px;
-  height: 100%;
-  max-height: calc(100dvh - 78px);
+  max-width: 440px;
   background: var(--panel-solid);
   border: 1px solid var(--line);
   border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.65);
+  box-shadow: 0 25px 60px rgba(0,0,0,0.85);
   display: flex;
   flex-direction: column;
+  position: absolute;
+  will-change: transform, opacity;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+}
+
+/* CARD FLY-OUT TRANSITION */
+.feed-card.exit-top {
+  transform: translate3d(0, -125vh, 0) scale(0.9) rotate(-3deg) !important;
+  opacity: 0 !important;
+}
+
+/* CARD ENTRANCE TRANSITION FROM BOTTOM */
+.feed-card.enter-bottom {
+  transform: translate3d(0, 100vh, 0) scale(0.92);
+  opacity: 0;
+}
+.feed-card.entered {
+  transform: translate3d(0, 0, 0) scale(1);
+  opacity: 1;
 }
 
 .card-meta {
@@ -101,9 +106,17 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 .badge-immutable { color: var(--good); font-weight: 700; display: flex; align-items: center; gap: 6px; }
 .badge-immutable::before { content:''; width: 5px; height: 5px; background: var(--good); border-radius: 50%; box-shadow: 0 0 6px var(--good); }
 
+/* 9:16 KINETIC CANVAS STAGE */
 .card-stage {
-  position: relative; width: 100%; flex: 1 1 auto; min-height: 0; overflow: hidden;
-  display: flex; flex-direction: column; justify-content: space-between; padding: 24px 20px;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9/16;
+  max-height: calc(100dvh - 195px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 22px 18px;
   background: var(--card-bg, #060710);
 }
 .card-info {
@@ -113,7 +126,55 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 }
 
 /* =========================================================================
-   CONTINUOUS PROCEDURAL BACKGROUND ENGINES (RUNS CONTINUOUSLY)
+   BOTTOM SETTLED 3-CARD TRAY / DECK
+   ========================================================================= */
+#bottomDeckTray {
+  position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+  width: calc(100% - 24px); max-width: 440px; height: 52px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 6px 12px;
+  background: rgba(12, 17, 28, 0.88);
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  backdrop-filter: blur(14px);
+  z-index: 90;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+.deck-slots { display: flex; align-items: center; gap: 8px; flex: 1; }
+.deck-slot {
+  flex: 1; height: 36px;
+  border-radius: 6px;
+  border: 1px dashed var(--line);
+  background: rgba(255,255,255,0.02);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: var(--dim);
+  transition: all 0.3s;
+}
+.deck-slot.loaded {
+  border-style: solid; border-color: var(--line-strong);
+  background: rgba(255,255,255,0.06); color: var(--muted);
+}
+.deck-slot.active {
+  border-color: var(--cyan); background: rgba(72,232,255,0.12);
+  color: var(--cyan); box-shadow: 0 0 12px rgba(72,232,255,0.25);
+  font-weight: 700;
+}
+.deck-slot.viewed {
+  border-color: transparent; background: transparent;
+  color: var(--dim); opacity: 0.3;
+}
+.swipe-indicator {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+  color: var(--cyan); display: flex; align-items: center; gap: 4px; padding-left: 6px;
+  letter-spacing: 0.5px; animation: pulseGlow 1.8s infinite ease-in-out;
+}
+@keyframes pulseGlow {
+  0%, 100% { opacity: 1; transform: translateY(0); }
+  50% { opacity: 0.5; transform: translateY(-2px); }
+}
+
+/* =========================================================================
+   CONTINUOUS PROCEDURAL BACKGROUNDS (LOOP CONTINUOUSLY)
    ========================================================================= */
 .bg-layer { position: absolute; inset: 0; pointer-events: none; z-index: 0; transform: translate3d(0,0,0); backface-visibility: hidden; }
 
@@ -151,56 +212,14 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 }
 @keyframes cloudPulse { 0% { transform: scale(1) translate3d(0,0,0); } 100% { transform: scale(1.15) translate3d(10px,-10px,0); } }
 
-/* 4. MATRIX STREAM */
-.bg-matrix {
-  background:
-    repeating-linear-gradient(0deg, transparent 0, transparent 8px, rgba(0,255,102,0.08) 8px, rgba(0,255,102,0.2) 12px),
-    linear-gradient(180deg, var(--card-accent-15) 0%, transparent 65%),
-    radial-gradient(ellipse at 50% 100%, var(--card-accent2-20) 0%, transparent 70%);
-  background-size: 100% 16px, 100% 100%, 100% 100%;
-  animation: matrixStream 2s linear infinite;
-}
-@keyframes matrixStream { from { background-position: 0 0, 0 0, 0 0; } to { background-position: 0 160px, 0 0, 0 0; } }
-
-/* 5. AURORA DRIFT */
-.bg-aurora {
-  background:
-    radial-gradient(circle at 20% 20%, var(--card-accent-25) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, var(--card-accent2-20) 0%, transparent 55%),
-    linear-gradient(135deg, transparent 20%, var(--card-accent-15) 50%, transparent 80%);
-  filter: blur(22px);
-  animation: auroraShift 7s ease-in-out infinite alternate;
-}
-@keyframes auroraShift {
-  0% { transform: scale(1) rotate(0deg); }
-  50% { transform: scale(1.18) rotate(3deg) translate3d(-10px, 15px, 0); }
-  100% { transform: scale(1.05) rotate(-3deg) translate3d(15px, -10px, 0); }
-}
-
-/* 6. QUANTUM VOID */
-.bg-quantum {
-  background:
-    radial-gradient(circle at center, transparent 20%, var(--card-accent-15) 50%, transparent 75%),
-    repeating-radial-gradient(circle at center, rgba(255,255,255,0.04) 0 2px, transparent 2px 28px),
-    linear-gradient(to bottom, transparent, var(--card-accent2-20));
-  animation: quantumPulse 6s ease-in-out infinite alternate;
-}
-@keyframes quantumPulse {
-  0% { transform: scale(0.95); opacity: 0.7; }
-  100% { transform: scale(1.15); opacity: 1; }
-}
-
-.card-stage:not(.active) .bg-layer { animation-play-state: paused; }
 .card-stage::after {
   content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
   background:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 4px);
   opacity:.18; mix-blend-mode:overlay;
 }
-.card-stage.active::after { animation: scanSweep 3.4s linear infinite; }
-@keyframes scanSweep { from { background-position: 0 0; } to { background-position: 0 64px; } }
 
 /* =========================================================================
-   TYPOGRAPHY COMPOSITOR
+   TYPOGRAPHY COMPOSITOR & ONE-TIME ENTRANCE ANIMATIONS
    ========================================================================= */
 .kinetic-header { position: relative; z-index: 2; display: flex; justify-content: center; }
 .kinetic-badge {
@@ -208,18 +227,24 @@ input, select, textarea { color: var(--text); background: transparent; border: n
   padding: 5px 12px; border-radius: 3px; background: var(--card-tag-bg, var(--card-accent)); color: #04060a;
   box-shadow: 0 0 14px var(--card-accent-40); transform: translate3d(0,0,0); backface-visibility: hidden;
 }
+
+.card-stage:not(.text-animated) .kinetic-body {
+  opacity: 0;
+  transform: scale3d(0.96, 0.96, 1);
+  transition: opacity 0.2s ease-out;
+}
 .kinetic-body {
   position: relative; z-index: 2; width: 100%; margin: auto 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; transform: translate3d(0,0,0); backface-visibility: hidden; will-change: transform;
 }
 .kinetic-headline {
-  font-family: 'Space Grotesk', sans-serif; font-size: clamp(30px, 7.8vw, 50px); font-weight: 900;
+  font-family: 'Space Grotesk', sans-serif; font-size: clamp(28px, 7.5vw, 46px); font-weight: 900;
   line-height: 1.05; text-transform: uppercase; text-align: center; color: var(--card-text, #ffffff);
 }
 .kinetic-headline .word-wrapper { display: inline-block; white-space: pre; will-change: transform, opacity; transform: translate3d(0,0,0); }
 .kinetic-headline .accent-word { color: var(--card-accent); text-shadow: 0 0 28px var(--card-accent-50); }
-.kinetic-footer { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.kinetic-subtitle { font-size: 14px; font-weight: 600; text-align: center; color: rgba(255,255,255,0.85); text-shadow: 0 2px 8px rgba(0,0,0,0.8); max-width: 90%; }
+.kinetic-footer { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.kinetic-subtitle { font-size: 13.5px; font-weight: 600; text-align: center; color: rgba(255,255,255,0.85); text-shadow: 0 2px 8px rgba(0,0,0,0.8); max-width: 90%; }
 .visit-btn {
   display: inline-flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px;
   font-weight: 700; padding: 7px 16px; border-radius: 20px; text-decoration: none; background: rgba(255,255,255,0.06);
@@ -227,72 +252,25 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 }
 .visit-btn:hover { background: var(--card-accent); color: #04060a; box-shadow: 0 0 20px var(--card-accent-50); }
 
-/* =========================================================================
-   ONE-TIME LANDING ENTRANCES (PLAYS ONCE PER ARRIVAL, NEVER LOOPS)
-   ========================================================================= */
-.anim-kinetic_slam.text-animated .kinetic-body {
-  animation: slamOnce 0.75s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
-}
-@keyframes slamOnce {
-  0% { transform: scale3d(2.4, 2.4, 1); opacity: 0; filter: blur(8px); }
-  65% { transform: scale3d(0.98, 0.98, 1); opacity: 1; filter: blur(0); }
-  100% { transform: scale3d(1, 1, 1); opacity: 1; filter: blur(0); }
-}
+.anim-kinetic_slam.text-animated .kinetic-body { animation: slamOnce 0.75s cubic-bezier(0.175,0.885,0.32,1.275) forwards; }
+@keyframes slamOnce { 0% { transform: scale3d(2.4, 2.4, 1); opacity: 0; filter: blur(8px); } 65% { transform: scale3d(0.98, 0.98, 1); opacity: 1; filter: blur(0); } 100% { transform: scale3d(1, 1, 1); opacity: 1; filter: blur(0); } }
 
-.anim-stagger_pop.text-animated .word-wrapper {
-  animation: popOnce 0.7s cubic-bezier(.34, 1.56, .64, 1) forwards;
-  animation-delay: calc(var(--idx) * 85ms);
-  opacity: 0;
-}
-@keyframes popOnce {
-  0% { transform: scale3d(0, 0, 1); opacity: 0; }
-  70% { transform: scale3d(1.1, 1.1, 1); opacity: 1; }
-  100% { transform: scale3d(1, 1, 1); opacity: 1; }
-}
+.anim-stagger_pop.text-animated .word-wrapper { animation: popOnce 0.7s cubic-bezier(.34, 1.56, .64, 1) forwards; animation-delay: calc(var(--idx) * 85ms); opacity: 0; }
+@keyframes popOnce { 0% { transform: scale3d(0, 0, 1); opacity: 0; } 70% { transform: scale3d(1.1, 1.1, 1); opacity: 1; } 100% { transform: scale3d(1, 1, 1); opacity: 1; } }
 
-.anim-neon_surge.text-animated .kinetic-headline {
-  animation: surgeOnce 1.2s ease-in-out forwards;
-}
-@keyframes surgeOnce {
-  0% { opacity: .2; filter: none; }
-  18% { opacity: 1; filter: drop-shadow(0 0 35px var(--card-accent)); }
-  32% { opacity: .35; filter: none; }
-  50% { opacity: 1; filter: drop-shadow(0 0 30px var(--card-accent)); }
-  75% { opacity: .8; filter: drop-shadow(0 0 14px var(--card-accent-40)); }
-  100% { opacity: 1; filter: drop-shadow(0 0 24px var(--card-accent)); }
-}
+.anim-neon_surge.text-animated .kinetic-headline { animation: surgeOnce 1.2s ease-in-out forwards; }
+@keyframes surgeOnce { 0% { opacity: .2; filter: none; } 18% { opacity: 1; filter: drop-shadow(0 0 35px var(--card-accent)); } 32% { opacity: .35; filter: none; } 50% { opacity: 1; filter: drop-shadow(0 0 30px var(--card-accent)); } 75% { opacity: .8; filter: drop-shadow(0 0 14px var(--card-accent-40)); } 100% { opacity: 1; filter: drop-shadow(0 0 24px var(--card-accent)); } }
 
-.anim-isometric_3d.text-animated .kinetic-body {
-  transform-style: preserve-3d;
-  animation: isoOnce 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-@keyframes isoOnce {
-  0% { transform: perspective(800px) rotateX(32deg) rotateY(-24deg) translate3d(0, 26px, -40px); opacity: 0; }
-  100% { transform: perspective(800px) rotateX(15deg) rotateY(-10deg) translate3d(0, 0, 0); opacity: 1; }
-}
+.anim-isometric_3d.text-animated .kinetic-body { transform-style: preserve-3d; animation: isoOnce 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes isoOnce { 0% { transform: perspective(800px) rotateX(32deg) rotateY(-24deg) translate3d(0, 26px, -40px); opacity: 0; } 100% { transform: perspective(800px) rotateX(15deg) rotateY(-10deg) translate3d(0, 0, 0); opacity: 1; } }
 
-.anim-glitch_rgb.text-animated .kinetic-headline {
-  animation: glitchOnce 0.9s steps(2, start) forwards;
-}
-@keyframes glitchOnce {
-  0% { opacity: 0; transform: translate3d(0,0,0); }
-  25% { opacity: 1; text-shadow: -4px 0 #ff1744, 4px 0 #00e5ff; transform: translate3d(3px,-1px,0); }
-  50% { text-shadow: 4px 0 #ff1744, -4px 0 #00e5ff; transform: translate3d(-3px,2px,0); }
-  75% { text-shadow: -2px 0 #ff1744, 2px 0 #00e5ff; transform: translate3d(1px,-1px,0); }
-  100% { text-shadow: none; transform: translate3d(0,0,0); opacity: 1; }
-}
+.anim-glitch_rgb.text-animated .kinetic-headline { animation: glitchOnce 0.9s steps(2, start) forwards; }
+@keyframes glitchOnce { 0% { opacity: 0; transform: translate3d(0,0,0); } 25% { opacity: 1; text-shadow: -4px 0 #ff1744, 4px 0 #00e5ff; transform: translate3d(3px,-1px,0); } 50% { text-shadow: 4px 0 #ff1744, -4px 0 #00e5ff; transform: translate3d(-3px,2px,0); } 75% { text-shadow: -2px 0 #ff1744, 2px 0 #00e5ff; transform: translate3d(1px,-1px,0); } 100% { text-shadow: none; transform: translate3d(0,0,0); opacity: 1; } }
 
-.anim-minimal_drift.text-animated .kinetic-body {
-  animation: driftOnce 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-@keyframes driftOnce {
-  0% { transform: translate3d(0, 24px, 0); opacity: 0; }
-  100% { transform: translate3d(0, 0, 0); opacity: 1; }
-}
+.anim-minimal_drift.text-animated .kinetic-body { animation: driftOnce 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes driftOnce { 0% { transform: translate3d(0, 24px, 0); opacity: 0; } 100% { transform: translate3d(0, 0, 0); opacity: 1; } }
 
-/* =========================================================================
-   ACTIONS & INTERACTION ROW
-   ========================================================================= */
+/* ACTIONS ROW */
 .card-actions {
   display: flex; align-items: center; justify-content: space-between;
   padding: 8px 16px; background: rgba(255,255,255,.02); border-top: 1px solid var(--line);
@@ -313,6 +291,15 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 .voice-pill.playing .wave-bar { animation: wv .6s infinite alternate; }
 @keyframes wv { to { height: 11px; } }
 
+/* PREVIEW CONTAINER */
+.preview-phone {
+  width: 100%; max-width: 220px; aspect-ratio: 9/16;
+  border-radius: 14px; border: 1.5px solid var(--line-strong);
+  overflow: hidden; position: relative; background: #000;
+}
+.preview-stage-wrap { width: 100%; height: 100%; display: flex; flex-direction: column; }
+.preview-stage-wrap .card-stage { width: 100%; height: 100%; max-height: none; aspect-ratio: auto; }
+
 #creatorDrawer, #searchDrawer {
   position: fixed; inset: 0; z-index: 200; background: rgba(4,6,10,0.88); backdrop-filter: blur(12px);
   display: flex; align-items: center; justify-content: center; padding: 16px; opacity: 0; pointer-events: none; transition: .25s;
@@ -320,8 +307,6 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 #creatorDrawer.open, #searchDrawer.open { opacity: 1; pointer-events: auto; }
 .creator-box { width: 100%; max-width: 860px; max-height: 92dvh; background: var(--panel-solid); border: 1px solid var(--line-strong); border-radius: 14px; display: flex; overflow: hidden; }
 .creator-preview { width: 320px; background: #000; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 1px solid var(--line); flex-shrink: 0; }
-.preview-phone { width: 100%; max-width: 220px; aspect-ratio: 9/16; border-radius: 14px; border: 1.5px solid var(--line-strong); overflow: hidden; position: relative; }
-.preview-stage-wrap, .preview-stage-wrap .card-stage { width: 100%; height: 100%; }
 .creator-form { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
 .field-group { display: flex; flex-direction: column; gap: 5px; }
 .field-label { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: var(--muted); }
@@ -334,7 +319,7 @@ select.text-input { background: #080c14; }
 .swatch.active { border-color: var(--cyan); color: var(--text); box-shadow: 0 0 8px rgba(72,232,255,.25); }
 .swatch .prev { height: 16px; border-radius: 2px; margin-bottom: 3px; }
 
-/* UNCLICKABLE DISABLED VOICE NOT REMOVED */
+/* UNCLICKABLE DISABLED VOICE CONTROLS */
 .rec-wrap-disabled {
   border: 1px dashed var(--line); border-radius: var(--r); padding: 10px;
   display: flex; align-items: center; gap: 10px; opacity: 0.45; pointer-events: none; cursor: not-allowed;
@@ -345,8 +330,7 @@ select.text-input { background: #080c14; }
 .search-box { width: min(540px,100%); background: var(--panel-solid); border: 1px solid var(--line-strong); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
 .modal-close { font-size: 20px; color: var(--muted); align-self: flex-end; }
 #searchResults { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow: auto; }
-#scrollSentinel { height: 60px; width: 100%; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--dim); }
-#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--panel-solid); border: 1px solid var(--line-strong); padding: 8px 16px; border-radius: var(--r); font-size: 12px; opacity: 0; transition: .25s; z-index: 300; pointer-events: none; }
+#toast { position: fixed; bottom: 74px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--panel-solid); border: 1px solid var(--line-strong); padding: 8px 16px; border-radius: var(--r); font-size: 12px; opacity: 0; transition: .25s; z-index: 300; pointer-events: none; }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 @media (max-width:768px) {
@@ -364,7 +348,7 @@ select.text-input { background: #080c14; }
 <div id="topbar">
   <div class="brand hud-element">
     <svg viewBox="0 0 24 24" fill="none"><path d="M4 6H20M12 6V19M8 19H16" stroke="#48e8ff" stroke-width="2.2" stroke-linecap="round"/></svg>
-    TYPE FORGE <span style="font-family:'JetBrains Mono';font-size:9px;color:var(--muted);margin-left:4px;">KINETIC ENGINE</span>
+    TYPE FORGE <span style="font-family:'JetBrains Mono';font-size:9px;color:var(--muted);margin-left:4px;">KINETIC DECK</span>
   </div>
   <div style="display:flex;gap:8px;" class="hud-element">
     <button class="stats-pill" id="btnOpenSearch" style="cursor:pointer;">SEARCH</button>
@@ -373,10 +357,19 @@ select.text-input { background: #080c14; }
   </div>
 </div>
 
-<!-- SMOOTH PROGRESSIVE VIEWPORT (NO GLITCH, NO SNAP RESISTANCE) -->
-<div id="feedViewport">
-  <div id="feedStream" style="width:100%;display:flex;flex-direction:column;"></div>
-  <div id="scrollSentinel">✦ INFINITE KINETIC STREAM ✦</div>
+<!-- SINGLE-CARD INSPECT STAGE -->
+<div id="mainStage">
+  <div class="active-card-slot" id="activeSlot"></div>
+</div>
+
+<!-- BOTTOM SETTLED 3-CARD TRAY -->
+<div id="bottomDeckTray">
+  <div class="deck-slots" id="deckSlotWrap">
+    <div class="deck-slot" id="slot0">CARD 1</div>
+    <div class="deck-slot" id="slot1">CARD 2</div>
+    <div class="deck-slot" id="slot2">CARD 3</div>
+  </div>
+  <div class="swipe-indicator" id="swipeIndicator">SWIPE UP ▲</div>
 </div>
 
 <!-- CREATOR MODAL -->
@@ -423,16 +416,13 @@ REMAINS FOREVER</textarea></div>
 
       <div class="field-group"><label class="field-label">THEME PALETTE</label><div class="swatch-grid" id="themeGrid"></div></div>
       
-      <!-- PROCEDURAL BACKGROUND DROPDOWN -->
+      <!-- EXACT DB CHECK CONSTRAINT OPTIONS (warp, grid, clouds) -->
       <div class="field-group">
         <label class="field-label">PROCEDURAL BACKGROUND</label>
         <select class="text-input" id="inBgSelect">
-          <option value="warp">Warp Speed (Stars)</option>
-          <option value="grid">Cyber Grid (Perspective)</option>
-          <option value="clouds">Nebula Mesh (Aurora)</option>
-          <option value="matrix">Matrix Stream (Digital Rain)</option>
-          <option value="aurora">Aurora Drift (Waves)</option>
-          <option value="quantum">Quantum Void (Concentric)</option>
+          <option value="warp">Warp Speed (Stars Dust)</option>
+          <option value="grid">Cyber Grid (Perspective Grid)</option>
+          <option value="clouds">Nebula Mesh (Aurora Nebula)</option>
         </select>
       </div>
 
@@ -456,7 +446,7 @@ REMAINS FOREVER</textarea></div>
 "use strict";
 
 /* =========================================================================
-   1. SUPABASE CLIENT INITIALIZATION
+   1. SUPABASE CLIENT
    ========================================================================= */
 const SUPABASE_URL = 'https://ymoiowbezpggrqxmkuku.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inltb2lvd2JlenBnZ3JxeG1rdWt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MTY0MzYsImV4cCI6MjEwMzk5MjQzNn0.sDmD_l1I-CDqT6lx3_jhYaQlXqNdW1r73Is9geJAlgw';
@@ -477,16 +467,12 @@ const THEMES = {
 const BACKGROUNDS = {
   warp: { name: 'WARP SPEED', cls: 'bg-warp' },
   grid: { name: 'CYBER GRID', cls: 'bg-grid' },
-  clouds: { name: 'NEBULA MESH', cls: 'bg-clouds' },
-  matrix: { name: 'MATRIX STREAM', cls: 'bg-matrix' },
-  aurora: { name: 'AURORA DRIFT', cls: 'bg-aurora' },
-  quantum: { name: 'QUANTUM VOID', cls: 'bg-quantum' }
+  clouds: { name: 'NEBULA MESH', cls: 'bg-clouds' }
 };
 
-const feedViewport = document.getElementById('feedViewport');
-const feed = document.getElementById('feedStream');
-const sentinel = document.getElementById('scrollSentinel');
+const activeSlot = document.getElementById('activeSlot');
 const toastEl = document.getElementById('toast');
+const swipeIndicator = document.getElementById('swipeIndicator');
 
 function toast(m) {
   toastEl.textContent = m;
@@ -525,19 +511,41 @@ const liked = new Set(JSON.parse(localStorage.getItem('tf-liked') || '[]'));
 function save(k, s) { localStorage.setItem(k, JSON.stringify([...s])); }
 
 /* =========================================================================
-   3. DOM CARD BUILDER
+   3. CARD BUILDER (INSPECT / PREVIEW)
    ========================================================================= */
-function card(p, preview = false) {
+function createCardElement(p, isPreview = false) {
   const t = THEMES[p.theme] || THEMES.cyber;
   const b = BACKGROUNDS[p.bg] || BACKGROUNDS.warp;
-  const pageWrap = document.createElement('div');
   const u = url(p.outbound_url || p.url || '');
-  
-  pageWrap.className = preview ? 'preview-stage-wrap' : 'card-page';
-  pageWrap.dataset.id = p.id || '';
+  let id = p.serial_no ? `#${String(p.serial_no).padStart(4, '0')}` : (p.id || 'ETCH');
 
-  const cardInner = document.createElement('div');
-  cardInner.className = preview ? 'card-stage-preview' : 'feed-card';
+  if (isPreview) {
+    const previewWrap = document.createElement('div');
+    previewWrap.className = 'preview-stage-wrap';
+    for (const [k, v] of Object.entries({
+      '--card-bg': t.bg, '--card-text': t.text, '--card-accent': t.accent,
+      '--card-accent-15': rgba(t.accent, .15), '--card-accent-20': rgba(t.accent, .2),
+      '--card-accent-25': rgba(t.accent, .25), '--card-accent-40': rgba(t.accent, .4),
+      '--card-accent-50': rgba(t.accent, .5), '--card-accent2-20': rgba(t.accent2, .2),
+      '--card-tag-bg': t.tagBg
+    })) previewWrap.style.setProperty(k, v);
+
+    previewWrap.innerHTML = `
+      <div class="card-stage anim-${esc(p.anim || 'kinetic_slam')} text-animated">
+        <div class="bg-layer ${b.cls}"></div>
+        <div class="kinetic-header"><div class="kinetic-badge">${esc(p.tagline || 'DECLARATION')}</div></div>
+        <div class="kinetic-body"><h1 class="kinetic-headline" data-raw="${encodeURIComponent(p.headline || '')}">${headline(p.headline, p.accent_word || p.accentWord)}</h1></div>
+        <div class="kinetic-footer">
+          ${p.subtitle ? `<div class="kinetic-subtitle">${esc(p.subtitle)}</div>` : ''}
+        </div>
+      </div>
+    `;
+    return previewWrap;
+  }
+
+  const card = document.createElement('div');
+  card.className = 'feed-card enter-bottom';
+  card.dataset.id = p.id || '';
 
   for (const [k, v] of Object.entries({
     '--card-bg': t.bg, '--card-text': t.text, '--card-accent': t.accent,
@@ -545,14 +553,10 @@ function card(p, preview = false) {
     '--card-accent-25': rgba(t.accent, .25), '--card-accent-40': rgba(t.accent, .4),
     '--card-accent-50': rgba(t.accent, .5), '--card-accent2-20': rgba(t.accent2, .2),
     '--card-tag-bg': t.tagBg
-  })) {
-    cardInner.style.setProperty(k, v);
-  }
+  })) card.style.setProperty(k, v);
 
-  let id = p.serial_no ? `#${String(p.serial_no).padStart(4, '0')}` : (p.id || 'ETCH');
-  
-  cardInner.innerHTML = `
-    ${preview ? '' : `<div class="card-meta"><span class="badge-immutable">PERMANENT RECORD</span><span>${esc(id)} · IMMUTABLE</span></div>`}
+  card.innerHTML = `
+    <div class="card-meta"><span class="badge-immutable">PERMANENT RECORD</span><span>${esc(id)} · IMMUTABLE</span></div>
     <div class="card-stage anim-${esc(p.anim || 'kinetic_slam')}">
       <div class="bg-layer ${b.cls}"></div>
       <div class="kinetic-header"><div class="kinetic-badge">${esc(p.tagline || 'DECLARATION')}</div></div>
@@ -562,41 +566,34 @@ function card(p, preview = false) {
         ${u ? `<a class="visit-btn" href="${esc(u)}" target="_blank" rel="noopener" onclick="trackClick('${p.id}')">VISIT SOURCE ↗</a>` : ''}
       </div>
     </div>
-    ${preview ? '' : `
-      <div class="card-actions">
-        <div class="card-interactive-left">
-          ${p.audio_url ? `
-            <button class="voice-pill" onclick="toggleVoice('${p.id}',this)">
-              ▶ <span>VOICE NOTE</span><span class="voice-wave"><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i></span>
-              <audio src="${esc(p.audio_url)}" preload="none"></audio>
-            </button>
-          ` : ''}
-        </div>
-        <div class="card-socials">
-          <button class="social-btn" ${own.has(p.id) ? 'disabled title="You cannot like your own inscription"' : ''} onclick="handleLike('${p.id}',this)">
-            ♡ <span>${p.likes_count || 0}</span>
+    <div class="card-actions">
+      <div class="card-interactive-left">
+        ${p.audio_url ? `
+          <button class="voice-pill" onclick="toggleVoice('${p.id}',this)">
+            ▶ <span>VOICE NOTE</span><span class="voice-wave"><i class="wave-bar"></i><i class="wave-bar"></i><i class="wave-bar"></i></span>
+            <audio src="${esc(p.audio_url)}" preload="none"></audio>
           </button>
-          <button class="social-btn" onclick="sharePost('${p.id}')">↗</button>
-        </div>
+        ` : ''}
       </div>
-      <div class="card-info">
-        <span>STYLE: ${esc((p.anim || 'kinetic_slam').replaceAll('_', ' ').toUpperCase())}</span>
-        <span>THEME: ${t.name}</span>
+      <div class="card-socials">
+        <button class="social-btn" ${own.has(p.id) ? 'disabled title="You cannot like your own inscription"' : ''} onclick="handleLike('${p.id}',this)">
+          ♡ <span>${p.likes_count || 0}</span>
+        </button>
+        <button class="social-btn" onclick="sharePost('${p.id}')">↗</button>
       </div>
-    `}
+    </div>
+    <div class="card-info">
+      <span>STYLE: ${esc((p.anim || 'kinetic_slam').replaceAll('_', ' ').toUpperCase())}</span>
+      <span>THEME: ${t.name}</span>
+    </div>
   `;
-  cardInner._accent = p.accent_word || p.accentWord || '';
-  if (liked.has(p.id) && !own.has(p.id)) cardInner.querySelector('.social-btn')?.classList.add('liked');
-  
-  if (preview) return cardInner;
-  pageWrap.appendChild(cardInner);
-  return pageWrap;
+  card._accent = p.accent_word || p.accentWord || '';
+  if (liked.has(p.id) && !own.has(p.id)) card.querySelector('.social-btn')?.classList.add('liked');
+  return card;
 }
 
-/* =========================================================================
-   4. SCRAMBLE ANIMATION (PLAYS ONCE)
-   ========================================================================= */
 function scramble(h, a) {
+  if (!h) return;
   let raw = decodeURIComponent(h.dataset.raw || ''), chars = '01$#<>!&%*?ABCDEFGHXYZ_/', start = performance.now();
   function f(n) {
     let q = Math.min(1, (n - start) / 750), k = Math.floor(q * raw.length), x = 0;
@@ -615,89 +612,195 @@ function scramble(h, a) {
 }
 
 /* =========================================================================
-   5. SETTLED INTERSECTION OBSERVER (ONE-TIME TEXT RUN PER CARD ARRIVAL)
+   4. BATCH CONTROLLER: 3 CARDS SETTLE AT BOTTOM -> SWIPE ADVANCES
    ========================================================================= */
-const landTimers = new WeakMap();
+let currentBatch = [];
+let activeBatchIndex = -1; // -1: none active, 0: card 1, 1: card 2, 2: card 3
+let cursor = null;
+let hasMore = true;
+let isFetching = false;
+let currentCardNode = null;
 
-const animObserver = new IntersectionObserver(es => {
-  es.forEach(x => {
-    let s = x.target.querySelector('.card-stage');
-    if (!s) return;
-    
-    // Background layer animation runs continuously in parallel
-    s.classList.toggle('active', x.isIntersecting);
+function updateBottomTrayUI() {
+  for (let i = 0; i < 3; i++) {
+    const slot = document.getElementById(`slot${i}`);
+    if (!slot) continue;
+    slot.className = 'deck-slot';
 
-    if (x.isIntersecting) {
-      if (!s.classList.contains('text-animated') && !landTimers.has(s)) {
-        let t = setTimeout(() => {
-          if (!s.classList.contains('text-animated')) {
-            s.classList.add('text-animated');
-            if (s.classList.contains('anim-cyber_scramble')) {
-              scramble(s.querySelector('.kinetic-headline'), x.target.querySelector('.feed-card')?._accent);
-            }
-          }
-          landTimers.delete(s);
-        }, 180);
-        landTimers.set(s, t);
-      }
+    if (i < currentBatch.length) {
+      slot.classList.add('loaded');
+      const item = currentBatch[i];
+      const displayTag = item.serial_no ? `#${String(item.serial_no).padStart(4,'0')}` : `CARD ${i+1}`;
+      slot.textContent = displayTag;
     } else {
-      if (landTimers.has(s)) {
-        clearTimeout(landTimers.get(s));
-        landTimers.delete(s);
-      }
-      s.classList.remove('text-animated');
+      slot.textContent = `EMPTY`;
     }
-  });
-}, { root: feedViewport, threshold: 0.5 });
 
-/* =========================================================================
-   6. PROGRESSIVE APPEND STREAM (NO FLICKER / NO RE-RENDER SHAKING)
-   ========================================================================= */
-let posts = [], cursor = null, more = true, loading = false;
-const PAGE = 12;
-
-async function next() {
-  if (loading || !more) return;
-  loading = true;
-  try {
-    let q = sbClient.from('kinetic_wall').select('*', { count: cursor ? undefined : 'exact' }).order('created_at', { ascending: false }).limit(PAGE);
-    if (cursor) q = q.lt('created_at', cursor);
-    let { data, error, count } = await q;
-    if (error) throw error;
-    if (count !== null) {
-      document.getElementById('postCountLabel').textContent = `${count} INSCRIBED`;
+    if (i === activeBatchIndex) {
+      slot.classList.add('active');
+    } else if (i < activeBatchIndex) {
+      slot.classList.add('viewed');
     }
-    if (!data?.length) {
-      more = false;
-      sentinel.textContent = '✦ END OF PERMANENT STREAM ✦';
-    } else {
-      const newItems = data.filter(p => !posts.some(x => x.id === p.id));
-      posts.push(...newItems);
-      cursor = data[data.length - 1].created_at;
+  }
 
-      // Mount non-destructively without wiping the DOM
-      const fragment = document.createDocumentFragment();
-      newItems.forEach(p => {
-        const c = card(p);
-        fragment.appendChild(c);
-        animObserver.observe(c);
-      });
-      feed.appendChild(fragment);
-    }
-  } catch (e) {
-    console.error(e);
-    toast('Error loading stream');
-  } finally {
-    loading = false;
+  if (activeBatchIndex >= 0 && activeBatchIndex < currentBatch.length) {
+    swipeIndicator.textContent = `NEXT ▲ (${activeBatchIndex + 1}/3)`;
+  } else if (currentBatch.length > 0) {
+    swipeIndicator.textContent = `SWIPE UP ▲`;
+  } else {
+    swipeIndicator.textContent = `LOADING...`;
   }
 }
 
-new IntersectionObserver(e => {
-  if (e[0].isIntersecting) next();
-}, { root: feedViewport, rootMargin: '800px' }).observe(sentinel);
+async function loadNextTriad(autoPresentFirst = true) {
+  if (isFetching || !hasMore) return;
+  isFetching = true;
+  swipeIndicator.textContent = `SYNCING...`;
+
+  try {
+    let q = sbClient
+      .from('kinetic_wall')
+      .select('*', { count: cursor ? undefined : 'exact' })
+      .order('created_at', { ascending: false })
+      .limit(3);
+
+    if (cursor) q = q.lt('created_at', cursor);
+
+    let { data, error, count } = await q;
+    if (error) throw error;
+
+    if (count !== null) {
+      document.getElementById('postCountLabel').textContent = `${count} INSCRIBED`;
+    }
+
+    if (!data || data.length === 0) {
+      hasMore = false;
+      toast('✦ REACHED END OF KINETIC ARCHIVE');
+      swipeIndicator.textContent = `END OF ARCHIVE`;
+      return;
+    }
+
+    currentBatch = data;
+    cursor = data[data.length - 1].created_at;
+    activeBatchIndex = -1;
+    updateBottomTrayUI();
+
+    if (autoPresentFirst) {
+      presentCard(0);
+    }
+  } catch (err) {
+    console.error('Batch fetch error:', err);
+    toast('Error loading inscription batch');
+  } finally {
+    isFetching = false;
+  }
+}
+
+function presentCard(index) {
+  if (index >= currentBatch.length) return;
+
+  activeBatchIndex = index;
+  updateBottomTrayUI();
+
+  const cardData = currentBatch[index];
+  const newCard = createCardElement(cardData);
+
+  activeSlot.appendChild(newCard);
+
+  // Smooth entry from bottom into center
+  requestAnimationFrame(() => {
+    newCard.classList.add('entered');
+    newCard.classList.remove('enter-bottom');
+
+    const stage = newCard.querySelector('.card-stage');
+    if (stage) {
+      setTimeout(() => {
+        stage.classList.add('text-animated');
+        if (stage.classList.contains('anim-cyber_scramble')) {
+          scramble(stage.querySelector('.kinetic-headline'), cardData.accent_word || cardData.accentWord);
+        }
+      }, 180);
+    }
+  });
+
+  currentCardNode = newCard;
+}
+
+function dismissActiveAndAdvance() {
+  if (isFetching) return;
+
+  if (!currentCardNode) {
+    if (currentBatch.length > 0) presentCard(0);
+    else loadNextTriad(true);
+    return;
+  }
+
+  // Active card flies off the top
+  const exiting = currentCardNode;
+  exiting.classList.add('exit-top');
+
+  // Immediately remove from DOM after flight transition
+  setTimeout(() => {
+    exiting.remove();
+  }, 480);
+
+  const nextIndex = activeBatchIndex + 1;
+
+  if (nextIndex < currentBatch.length) {
+    // Present next card in current triad
+    setTimeout(() => {
+      presentCard(nextIndex);
+    }, 120);
+  } else {
+    // 3 cards completed -> fetch next set of 3
+    currentCardNode = null;
+    activeBatchIndex = 3;
+    updateBottomTrayUI();
+    toast('✦ LOADING NEXT TRIAD TO DOCK');
+    loadNextTriad(true);
+  }
+}
 
 /* =========================================================================
-   7. SOCIAL INTERACTIONS
+   5. UPWARD SWIPE / WHEEL GESTURE DETECTOR
+   ========================================================================= */
+let touchStartY = 0, touchStartX = 0, isTracking = false;
+
+window.addEventListener('touchstart', e => {
+  if (e.target.closest('#creatorDrawer, #searchDrawer, button, a, input, select, textarea')) return;
+  touchStartY = e.touches[0].clientY;
+  touchStartX = e.touches[0].clientX;
+  isTracking = true;
+}, { passive: true });
+
+window.addEventListener('touchend', e => {
+  if (!isTracking) return;
+  isTracking = false;
+  let diffY = e.changedTouches[0].clientY - touchStartY;
+  let diffX = e.changedTouches[0].clientX - touchStartX;
+
+  // Swiped Upwards (> 42px)
+  if (diffY < -42 && Math.abs(diffY) > Math.abs(diffX)) {
+    dismissActiveAndAdvance();
+  }
+}, { passive: true });
+
+let wheelLock = false;
+window.addEventListener('wheel', e => {
+  if (e.target.closest('#creatorDrawer, #searchDrawer')) return;
+  if (e.deltaY > 35 && !wheelLock) {
+    wheelLock = true;
+    dismissActiveAndAdvance();
+    setTimeout(() => { wheelLock = false; }, 550);
+  }
+}, { passive: true });
+
+document.getElementById('bottomDeckTray').addEventListener('click', () => {
+  dismissActiveAndAdvance();
+});
+
+/* =========================================================================
+   6. SOCIAL INTERACTIONS
    ========================================================================= */
 async function handleLike(id, b) {
   if (own.has(id)) { toast('You cannot like your own inscription'); return; }
@@ -736,7 +839,7 @@ function toggleVoice(id, b) {
 }
 
 /* =========================================================================
-   8. CREATOR DRAWER & PREVIEW ENGINE
+   7. CREATOR DRAWER & LIVE PREVIEW
    ========================================================================= */
 const drawer = document.getElementById('creatorDrawer');
 const wrap = document.getElementById('previewPhoneWrap');
@@ -757,13 +860,10 @@ function form() {
 }
 
 function preview() {
-  wrap.replaceChildren(card(form(), true));
+  wrap.replaceChildren(createCardElement(form(), true));
   const stage = wrap.querySelector('.card-stage');
-  if (stage) {
-    stage.classList.add('active', 'text-animated');
-    if (stage.classList.contains('anim-cyber_scramble')) {
-      scramble(stage.querySelector('.kinetic-headline'), document.getElementById('inWord')?.value || '');
-    }
+  if (stage && stage.classList.contains('anim-cyber_scramble')) {
+    scramble(stage.querySelector('.kinetic-headline'), document.getElementById('inWord')?.value || '');
   }
 }
 
@@ -796,9 +896,7 @@ document.getElementById('btnOpenCreator').onclick = () => {
 };
 document.getElementById('btnCloseDrawer').onclick = () => drawer.classList.remove('open');
 
-/* =========================================================================
-   COMMIT LOGIC: DIRECT POSTGREST INSERTION
-   ========================================================================= */
+/* COMMIT ACTION: STRICTLY ALIGNED WITH DB CHECK CONSTRAINTS */
 document.getElementById('btnCommit').onclick = async () => {
   let d = form();
   if (!d.headline) return toast('Headline text is required');
@@ -815,7 +913,7 @@ document.getElementById('btnCommit').onclick = async () => {
       subtitle: d.subtitle || null,
       anim: d.anim || 'kinetic_slam',
       theme: d.theme || 'cyber',
-      bg: d.bg || 'warp',
+      bg: d.bg || 'warp', // Validated against DB CHECK constraint
       outbound_url: d.outbound_url || null,
       audio_url: null
     };
@@ -831,15 +929,15 @@ document.getElementById('btnCommit').onclick = async () => {
 
     own.add(data.id);
     save('tf-own', own);
-    posts.unshift(data);
-    
-    // Prepend newly created card directly to the top
-    const newCard = card(data);
-    feed.prepend(newCard);
-    animObserver.observe(newCard);
-    
+
+    // Insert as the fresh active card immediately
+    if (currentCardNode) currentCardNode.remove();
+    currentBatch.unshift(data);
+    activeBatchIndex = 0;
+    updateBottomTrayUI();
+    presentCard(0);
+
     drawer.classList.remove('open');
-    feedViewport.scrollTo({ top: 0, behavior: 'smooth' });
     toast('✦ PERMANENTLY INSCRIBED');
   } catch (e) {
     console.error('Commit failed:', e);
@@ -851,7 +949,7 @@ document.getElementById('btnCommit').onclick = async () => {
 };
 
 /* =========================================================================
-   9. SEARCH MODAL
+   8. SEARCH MODAL
    ========================================================================= */
 const searchDrawer = document.getElementById('searchDrawer');
 const searchInput = document.getElementById('searchInput');
@@ -865,25 +963,37 @@ searchInput.oninput = async () => {
   if (!q) return searchResults.replaceChildren();
   let { data } = await sbClient.from('kinetic_wall').select('id,serial_no,headline,tagline').or(`headline.ilike.%${q}%,subtitle.ilike.%${q}%,tagline.ilike.%${q}%`).limit(8);
   searchResults.innerHTML = (data || []).map(p =>
-    `<button class="text-input" style="padding:8px 0;text-align:left;border-bottom:1px solid var(--line);" onclick="location.hash='p=${p.id}';location.reload()">#${p.serial_no} · ${esc(p.headline)}</button>`
+    `<button class="text-input" style="padding:8px 0;text-align:left;border-bottom:1px solid var(--line);" onclick="jumpToCard('${p.id}')">#${p.serial_no} · ${esc(p.headline)}</button>`
   ).join('');
 };
 
+async function jumpToCard(id) {
+  searchDrawer.classList.remove('open');
+  let { data } = await sbClient.from('kinetic_wall').select('*').eq('id', id).maybeSingle();
+  if (data) {
+    if (currentCardNode) currentCardNode.remove();
+    currentBatch = [data];
+    activeBatchIndex = 0;
+    updateBottomTrayUI();
+    presentCard(0);
+  }
+}
+
 /* =========================================================================
-   10. BOOTSTRAP INITIALIZER
+   9. BOOTSTRAP INITIALIZER
    ========================================================================= */
 addEventListener('DOMContentLoaded', async () => {
   let id = location.hash.match(/^#p=(.+)/)?.[1];
   if (id) {
     let { data } = await sbClient.from('kinetic_wall').select('*').eq('id', id).maybeSingle();
     if (data) {
-      posts.push(data);
-      const c = card(data);
-      feed.appendChild(c);
-      animObserver.observe(c);
+      currentBatch = [data];
+      updateBottomTrayUI();
+      presentCard(0);
+      return;
     }
   }
-  next();
+  loadNextTriad(true);
 });
 </script>
 </body>

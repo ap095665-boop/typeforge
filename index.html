@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@400;600;700&family=Syne:wght@800;900&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@sb/sb-js@2"></script>
   <style>
     :root{--bg:#000;--font-display:'Syne',-apple-system,sans-serif;--font-body:'Space Grotesk',-apple-system,sans-serif;--font-mono:'JetBrains Mono',monospace;--card-accent:#00f3ff;--card-accent-glow:rgba(0,243,255,.35);--card-bg:#03070d;--card-text:#fff;--card-sub:rgba(255,255,255,.7)}
     [data-theme=neon-cyan]{--card-accent:#00f3ff;--card-accent-glow:rgba(0,243,255,.4);--card-bg:#02060b;--card-text:#fff;--card-sub:#8ea8c3}
@@ -66,7 +66,7 @@
 const SUPABASE_URL='https://ldrwqpusfnssbzvqthfp.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkcndxcHVzZm5zc2J6dnF0aGZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzNzUxMDYsImV4cCI6MjEwMzk1MTEwNn0.t4B5plmjqt25A6bXN7i95i5u9wuBJjjiV-JS97YwQk0';
 
-const supabase =
+const sb =
   (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && window.supabase)
     ? window.supabase.createClient(
         SUPABASE_URL,
@@ -105,13 +105,13 @@ function cardEl(item,index){
 }
 function render(item,prepend=false){if(loadedCardIds.has(item.id))return;loadedCardIds.add(item.id);let c=cardEl(item,loadedCardIds.size-1);prepend?feedViewport.prepend(c):feedViewport.append(c);observer.observe(c)}
 async function loadCards(reset=false){
- if(!supabase){if(reset){feedViewport.innerHTML='';loadedCardIds.clear()}DEMO.forEach(render);return}
+ if(!sb){if(reset){feedViewport.innerHTML='';loadedCardIds.clear()}DEMO.forEach(render);return}
  if(isLoading||(!hasMore&&!reset))return;isLoading=true;if(reset){currentPage=0;hasMore=true;feedViewport.innerHTML='';loadedCardIds.clear()}
- try{let {data,error}=await supabase.from('kinetic_wall').select('*').order('is_pinned',{ascending:false}).order('created_at',{ascending:false}).range(currentPage*10,currentPage*10+9);if(error)throw error;if(!data?.length){hasMore=false;if(!loadedCardIds.size)emptyState.style.display='flex';return}if(data.length<10)hasMore=false;data.forEach(render);currentPage++}catch(e){console.error(e)}finally{isLoading=false}
+ try{let {data,error}=await sb.from('kinetic_wall').select('*').order('is_pinned',{ascending:false}).order('created_at',{ascending:false}).range(currentPage*10,currentPage*10+9);if(error)throw error;if(!data?.length){hasMore=false;if(!loadedCardIds.size)emptyState.style.display='flex';return}if(data.length<10)hasMore=false;data.forEach(render);currentPage++}catch(e){console.error(e)}finally{isLoading=false}
 }
 async function toggleVoice(pill,id){let a=pill.querySelector('audio');if(currentAudio&&currentAudio!==a){currentAudio.pause();currentVoicePill?.classList.remove('playing')}if(a.paused){try{await a.play();pill.classList.add('playing');currentAudio=a;currentVoicePill=pill}catch(e){showToast('PLAYBACK FAILED')}}else{a.pause();pill.classList.remove('playing')}}
 function audioEnded(a){a.closest('.voice-pill')?.classList.remove('playing')}
-async function likeCard(id,b){if(b.classList.contains('liked'))return;b.classList.add('liked');let s=b.querySelector('span');s.textContent=+s.textContent+1;if(supabase)supabase.rpc('increment_likes',{target_id:id}).catch(()=>{})}
+async function likeCard(id,b){if(b.classList.contains('liked'))return;b.classList.add('liked');let s=b.querySelector('span');s.textContent=+s.textContent+1;if(sb)sb.rpc('increment_likes',{target_id:id}).catch(()=>{})}
 function shareCard(id){let u=location.origin+location.pathname+'#p='+id;if(navigator.share)navigator.share({title:'TypeForge',url:u}).catch(()=>{});else navigator.clipboard?.writeText(u).then(()=>showToast('PERMALINK COPIED'))}
 function showToast(m){let t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
 const inscribeModal=document.getElementById('inscribeModal'),searchModal=document.getElementById('searchModal');
@@ -138,7 +138,7 @@ document.getElementById('submitPostBtn').onclick=async()=>{
     return;
   }
 
-  if(!supabase || !INSCRIBE_FUNCTION_URL){
+  if(!sb || !INSCRIBE_FUNCTION_URL){
     showToast('SUPABASE IS NOT CONFIGURED');
     return;
   }
@@ -174,7 +174,7 @@ document.getElementById('submitPostBtn').onclick=async()=>{
       uploadedPath=path;
 
       const uploadResult =
-        await supabase.storage
+        await sb.storage
           .from('voice_notes')
           .upload(
             path,
@@ -191,7 +191,7 @@ document.getElementById('submitPostBtn').onclick=async()=>{
       }
 
       audioUrl =
-        supabase.storage
+        sb.storage
           .from('voice_notes')
           .getPublicUrl(path)
           .data
@@ -304,11 +304,11 @@ document.getElementById('submitPostBtn').onclick=async()=>{
 };
 function resetForm(){['inputHeadline','inputAccent','inputSubtitle','inputAuthor','inputUrl'].forEach(id=>document.getElementById(id).value='');blob=null;preview.src='';preview.style.display='none';recTimer.textContent='00:00 / 01:00'}
 let debounce;document.getElementById('searchInput').oninput=e=>{clearTimeout(debounce);debounce=setTimeout(()=>search(e.target.value),250)};
-async function search(q){q=q.trim();let data=[];if(supabase&&q){let r=await supabase.from('kinetic_wall').select('id,serial_no,headline,author_handle').or(`headline.ilike.%${q}%,subtitle.ilike.%${q}%,author_handle.ilike.%${q}%`).limit(10);data=r.data||[]}else data=DEMO.filter(x=>(x.headline+x.subtitle+x.author_handle).toLowerCase().includes(q.toLowerCase()));document.getElementById('searchResults').innerHTML=data.map(x=>`<div style="padding:12px;background:#ffffff0d;border-radius:8px;cursor:pointer" onclick="jump('${esc(x.id)}')"><small>#${String(x.serial_no).padStart(4,'0')} BY ${esc(x.author_handle)}</small><div style="font-weight:700">${esc(x.headline)}</div></div>`).join('')||'<div style="color:#888">NO RESULTS</div>'}
-function jump(id){closeModals();let x=document.querySelector(`[data-id="${CSS.escape(id)}"]`);if(x)x.scrollIntoView({behavior:'smooth'});else if(supabase)loadCards()}
+async function search(q){q=q.trim();let data=[];if(sb&&q){let r=await sb.from('kinetic_wall').select('id,serial_no,headline,author_handle').or(`headline.ilike.%${q}%,subtitle.ilike.%${q}%,author_handle.ilike.%${q}%`).limit(10);data=r.data||[]}else data=DEMO.filter(x=>(x.headline+x.subtitle+x.author_handle).toLowerCase().includes(q.toLowerCase()));document.getElementById('searchResults').innerHTML=data.map(x=>`<div style="padding:12px;background:#ffffff0d;border-radius:8px;cursor:pointer" onclick="jump('${esc(x.id)}')"><small>#${String(x.serial_no).padStart(4,'0')} BY ${esc(x.author_handle)}</small><div style="font-weight:700">${esc(x.headline)}</div></div>`).join('')||'<div style="color:#888">NO RESULTS</div>'}
+function jump(id){closeModals();let x=document.querySelector(`[data-id="${CSS.escape(id)}"]`);if(x)x.scrollIntoView({behavior:'smooth'});else if(sb)loadCards()}
 function scramble(el){if(!el||el.dataset.scrambling)return;el.dataset.scrambling=1;let html=el.innerHTML,text=el.textContent,i=0;let iv=setInterval(()=>{el.textContent=text.split('').map((c,n)=>n<i?c:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random()*36)]).join('');if(i++>=text.length){clearInterval(iv);el.innerHTML=html;delete el.dataset.scrambling}},30)}
 window.addEventListener('DOMContentLoaded',()=>{
-  if(!supabase){
+  if(!sb){
     showToast('ADD SUPABASE URL + ANON KEY');
   }
   loadCards();

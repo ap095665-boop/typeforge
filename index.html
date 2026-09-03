@@ -24,6 +24,7 @@ html, body {
   background: var(--void); color: var(--text); font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   position: fixed;
+  user-select: none;
 }
 ::selection { background: var(--cyan); color: #000; }
 button { cursor: pointer; border: none; background: none; color: inherit; font-family: inherit; }
@@ -51,15 +52,15 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 }
 .create-btn:hover { filter: brightness(1.15); box-shadow: 0 0 16px rgba(72,232,255,0.35); }
 
-/* MAIN STAGE (NO SCROLLING - ABSOLUTE VIEWPORT) */
+/* MAIN STAGE */
 #mainStage {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
-  padding: 60px 16px 84px;
-  perspective: 1000px;
+  padding: 60px 16px 88px;
+  perspective: 1200px;
+  overflow: hidden;
 }
 
-/* THE ACTIVE CENTER CARD */
 .active-card-slot {
   width: 100%; max-width: 440px; height: 100%;
   display: flex; align-items: center; justify-content: center;
@@ -78,23 +79,23 @@ input, select, textarea { color: var(--text); background: transparent; border: n
   flex-direction: column;
   position: absolute;
   will-change: transform, opacity;
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+  touch-action: none;
 }
 
-/* CARD FLY-OUT TRANSITION */
-.feed-card.exit-top {
-  transform: translate3d(0, -125vh, 0) scale(0.9) rotate(-3deg) !important;
-  opacity: 0 !important;
-}
-
-/* CARD ENTRANCE TRANSITION FROM BOTTOM */
+/* FLUID SWIPE ANIMATIONS */
 .feed-card.enter-bottom {
-  transform: translate3d(0, 100vh, 0) scale(0.92);
+  transform: translate3d(0, 110vh, 0) scale(0.92);
   opacity: 0;
 }
 .feed-card.entered {
   transform: translate3d(0, 0, 0) scale(1);
   opacity: 1;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+}
+.feed-card.exit-top {
+  transform: translate3d(0, -125vh, 0) scale(0.88) rotate(-2.5deg) !important;
+  opacity: 0 !important;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease !important;
 }
 
 .card-meta {
@@ -106,12 +107,12 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 .badge-immutable { color: var(--good); font-weight: 700; display: flex; align-items: center; gap: 6px; }
 .badge-immutable::before { content:''; width: 5px; height: 5px; background: var(--good); border-radius: 50%; box-shadow: 0 0 6px var(--good); }
 
-/* 9:16 KINETIC CANVAS STAGE */
+/* 9:16 KINETIC COMPOSITOR STAGE */
 .card-stage {
   position: relative;
   width: 100%;
   aspect-ratio: 9/16;
-  max-height: calc(100dvh - 195px);
+  max-height: calc(100dvh - 200px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -126,59 +127,60 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 }
 
 /* =========================================================================
-   BOTTOM SETTLED 3-CARD TRAY / DECK
+   BOTTOM SETTLED 3-CARD TRAY
    ========================================================================= */
 #bottomDeckTray {
   position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
-  width: calc(100% - 24px); max-width: 440px; height: 52px;
+  width: calc(100% - 24px); max-width: 440px; height: 58px;
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 6px 12px;
-  background: rgba(12, 17, 28, 0.88);
+  padding: 6px 10px;
+  background: rgba(12, 17, 28, 0.92);
   border: 1px solid var(--line-strong);
   border-radius: 14px;
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(16px);
   z-index: 90;
   box-shadow: 0 10px 30px rgba(0,0,0,0.8);
 }
-.deck-slots { display: flex; align-items: center; gap: 8px; flex: 1; }
+.deck-slots { display: flex; align-items: center; gap: 6px; flex: 1; height: 100%; }
 .deck-slot {
-  flex: 1; height: 36px;
-  border-radius: 6px;
+  flex: 1; height: 100%;
+  border-radius: 8px;
   border: 1px dashed var(--line);
   background: rgba(255,255,255,0.02);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: var(--dim);
-  transition: all 0.3s;
+  font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--dim);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
+  padding: 0 4px;
 }
 .deck-slot.loaded {
   border-style: solid; border-color: var(--line-strong);
-  background: rgba(255,255,255,0.06); color: var(--muted);
+  background: rgba(255,255,255,0.05); color: var(--muted);
 }
 .deck-slot.active {
-  border-color: var(--cyan); background: rgba(72,232,255,0.12);
-  color: var(--cyan); box-shadow: 0 0 12px rgba(72,232,255,0.25);
-  font-weight: 700;
+  border-color: var(--cyan); background: rgba(72,232,255,0.14);
+  color: var(--cyan); box-shadow: 0 0 14px rgba(72,232,255,0.25);
+  font-weight: 800;
 }
 .deck-slot.viewed {
   border-color: transparent; background: transparent;
-  color: var(--dim); opacity: 0.3;
-}
-.swipe-indicator {
-  font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
-  color: var(--cyan); display: flex; align-items: center; gap: 4px; padding-left: 6px;
-  letter-spacing: 0.5px; animation: pulseGlow 1.8s infinite ease-in-out;
-}
-@keyframes pulseGlow {
-  0%, 100% { opacity: 1; transform: translateY(0); }
-  50% { opacity: 0.5; transform: translateY(-2px); }
+  color: var(--dim); opacity: 0.25;
 }
 
+.swipe-action-btn {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 800;
+  color: #04060a; background: var(--cyan); padding: 0 14px; height: 100%;
+  border-radius: 8px; display: flex; align-items: center; gap: 4px;
+  letter-spacing: 0.5px; box-shadow: 0 0 12px rgba(72,232,255,0.4);
+  transition: transform 0.15s, filter 0.15s;
+}
+.swipe-action-btn:active { transform: scale(0.95); filter: brightness(0.9); }
+
 /* =========================================================================
-   CONTINUOUS PROCEDURAL BACKGROUNDS (LOOP CONTINUOUSLY)
+   BACKGROUND GRAPHICS (CONTINUOUS LOOP)
    ========================================================================= */
 .bg-layer { position: absolute; inset: 0; pointer-events: none; z-index: 0; transform: translate3d(0,0,0); backface-visibility: hidden; }
 
-/* 1. WARP DUST */
 .bg-warp {
   background:
     radial-gradient(circle at 50% 50%, var(--card-accent2-20) 0%, transparent 60%),
@@ -192,7 +194,6 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 }
 @keyframes warpDrift { 0% { background-position: 0 0,0 0,0 0,0 0,0 0; } 100% { background-position: 0 0,0 0,0 540px,0 780px,0 420px; } }
 
-/* 2. CYBER GRID */
 .bg-grid {
   background-image:
     linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px),
@@ -203,7 +204,6 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 }
 @keyframes gridTravel { from { background-position: 0 0,0 0,0 0; } to { background-position: 32px 32px,32px 32px,0 0; } }
 
-/* 3. NEBULA MESH */
 .bg-clouds {
   background:
     radial-gradient(circle at 30% 30%, var(--card-accent-25) 0%, transparent 55%),
@@ -219,7 +219,7 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 }
 
 /* =========================================================================
-   TYPOGRAPHY COMPOSITOR & ONE-TIME ENTRANCE ANIMATIONS
+   KINETIC TYPOGRAPHY (ONE-TIME SETTLED ANIMATION)
    ========================================================================= */
 .kinetic-header { position: relative; z-index: 2; display: flex; justify-content: center; }
 .kinetic-badge {
@@ -252,6 +252,7 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 }
 .visit-btn:hover { background: var(--card-accent); color: #04060a; box-shadow: 0 0 20px var(--card-accent-50); }
 
+/* SINGLE-PLAY ANIMATIONS */
 .anim-kinetic_slam.text-animated .kinetic-body { animation: slamOnce 0.75s cubic-bezier(0.175,0.885,0.32,1.275) forwards; }
 @keyframes slamOnce { 0% { transform: scale3d(2.4, 2.4, 1); opacity: 0; filter: blur(8px); } 65% { transform: scale3d(0.98, 0.98, 1); opacity: 1; filter: blur(0); } 100% { transform: scale3d(1, 1, 1); opacity: 1; filter: blur(0); } }
 
@@ -270,7 +271,7 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 .anim-minimal_drift.text-animated .kinetic-body { animation: driftOnce 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 @keyframes driftOnce { 0% { transform: translate3d(0, 24px, 0); opacity: 0; } 100% { transform: translate3d(0, 0, 0); opacity: 1; } }
 
-/* ACTIONS ROW */
+/* ACTIONS */
 .card-actions {
   display: flex; align-items: center; justify-content: space-between;
   padding: 8px 16px; background: rgba(255,255,255,.02); border-top: 1px solid var(--line);
@@ -291,7 +292,7 @@ input, select, textarea { color: var(--text); background: transparent; border: n
 .voice-pill.playing .wave-bar { animation: wv .6s infinite alternate; }
 @keyframes wv { to { height: 11px; } }
 
-/* PREVIEW CONTAINER */
+/* PREVIEW DRAWER ARCHITECTURE */
 .preview-phone {
   width: 100%; max-width: 220px; aspect-ratio: 9/16;
   border-radius: 14px; border: 1.5px solid var(--line-strong);
@@ -319,7 +320,7 @@ select.text-input { background: #080c14; }
 .swatch.active { border-color: var(--cyan); color: var(--text); box-shadow: 0 0 8px rgba(72,232,255,.25); }
 .swatch .prev { height: 16px; border-radius: 2px; margin-bottom: 3px; }
 
-/* UNCLICKABLE DISABLED VOICE CONTROLS */
+/* UNCLICKABLE DISABLED VOICE NOT REMOVED */
 .rec-wrap-disabled {
   border: 1px dashed var(--line); border-radius: var(--r); padding: 10px;
   display: flex; align-items: center; gap: 10px; opacity: 0.45; pointer-events: none; cursor: not-allowed;
@@ -330,7 +331,7 @@ select.text-input { background: #080c14; }
 .search-box { width: min(540px,100%); background: var(--panel-solid); border: 1px solid var(--line-strong); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
 .modal-close { font-size: 20px; color: var(--muted); align-self: flex-end; }
 #searchResults { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow: auto; }
-#toast { position: fixed; bottom: 74px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--panel-solid); border: 1px solid var(--line-strong); padding: 8px 16px; border-radius: var(--r); font-size: 12px; opacity: 0; transition: .25s; z-index: 300; pointer-events: none; }
+#toast { position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--panel-solid); border: 1px solid var(--line-strong); padding: 8px 16px; border-radius: var(--r); font-size: 12px; opacity: 0; transition: .25s; z-index: 300; pointer-events: none; }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 @media (max-width:768px) {
@@ -369,7 +370,7 @@ select.text-input { background: #080c14; }
     <div class="deck-slot" id="slot1">CARD 2</div>
     <div class="deck-slot" id="slot2">CARD 3</div>
   </div>
-  <div class="swipe-indicator" id="swipeIndicator">SWIPE UP ▲</div>
+  <button class="swipe-action-btn" id="btnNextSwipe">SWIPE UP ▲</button>
 </div>
 
 <!-- CREATOR MODAL -->
@@ -416,7 +417,7 @@ REMAINS FOREVER</textarea></div>
 
       <div class="field-group"><label class="field-label">THEME PALETTE</label><div class="swatch-grid" id="themeGrid"></div></div>
       
-      <!-- EXACT DB CHECK CONSTRAINT OPTIONS (warp, grid, clouds) -->
+      <!-- DATABASE CHECK-CONSTRAINT STRICT BACKGROUNDS -->
       <div class="field-group">
         <label class="field-label">PROCEDURAL BACKGROUND</label>
         <select class="text-input" id="inBgSelect">
@@ -456,12 +457,12 @@ const sbClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
    2. CONFIGURATION & PROCEDURAL THEMES
    ========================================================================= */
 const THEMES = {
-  cyber: { name: 'CYBER NEON', accent: '#48e8ff', accent2: '#ff2ad4', bg: '#050711', text: '#fff', tagBg: '#ff2ad4' },
-  gold: { name: 'LUXURY GOLD', accent: '#ffd066', accent2: '#fff', bg: '#08080a', text: '#fbf5e6', tagBg: '#ffd066' },
+  cyber: { name: 'CYBER NEON', accent: '#48e8ff', accent2: '#ff2ad4', bg: '#050711', text: '#ffffff', tagBg: '#ff2ad4' },
+  gold: { name: 'LUXURY GOLD', accent: '#ffd066', accent2: '#ffffff', bg: '#08080a', text: '#fbf5e6', tagBg: '#ffd066' },
   matrix: { name: 'TERMINAL', accent: '#39ff6a', accent2: '#0aff9d', bg: '#030804', text: '#d6ffe3', tagBg: '#39ff6a' },
   acid: { name: 'STREET ACID', accent: '#d9ff00', accent2: '#00f7ff', bg: '#090a0d', text: '#f3f4f6', tagBg: '#d9ff00' },
-  crimson: { name: 'HYPER RED', accent: '#ff3355', accent2: '#ff9900', bg: '#0c0305', text: '#fff', tagBg: '#ff3355' },
-  minimal: { name: 'SWISS MONO', accent: '#fff', accent2: '#808999', bg: '#060608', text: '#fff', tagBg: '#fff' }
+  crimson: { name: 'HYPER RED', accent: '#ff3355', accent2: '#ff9900', bg: '#0c0305', text: '#ffffff', tagBg: '#ff3355' },
+  minimal: { name: 'SWISS MONO', accent: '#ffffff', accent2: '#808999', bg: '#060608', text: '#ffffff', tagBg: '#ffffff' }
 };
 
 const BACKGROUNDS = {
@@ -472,7 +473,7 @@ const BACKGROUNDS = {
 
 const activeSlot = document.getElementById('activeSlot');
 const toastEl = document.getElementById('toast');
-const swipeIndicator = document.getElementById('swipeIndicator');
+const btnNextSwipe = document.getElementById('btnNextSwipe');
 
 function toast(m) {
   toastEl.textContent = m;
@@ -492,9 +493,14 @@ function url(v) {
   } catch (e) { return null; }
 }
 
-function rgba(h, a) {
-  let n = parseInt(h.slice(1), 16);
-  return `rgba(${n >> 16},${n >> 8 & 255},${n & 255},${a})`;
+/* ROBUST 3 & 6 DIGIT HEX TO RGBA PARSER */
+function hexToRgba(hex, alpha) {
+  if (!hex || typeof hex !== 'string') return `rgba(255,255,255,${alpha})`;
+  let c = hex.replace('#', '').trim();
+  if (c.length === 3) c = c.split('').map(x => x + x).join('');
+  if (c.length !== 6) return `rgba(255,255,255,${alpha})`;
+  const num = parseInt(c, 16);
+  return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
 }
 
 function headline(h, a) {
@@ -511,7 +517,7 @@ const liked = new Set(JSON.parse(localStorage.getItem('tf-liked') || '[]'));
 function save(k, s) { localStorage.setItem(k, JSON.stringify([...s])); }
 
 /* =========================================================================
-   3. CARD BUILDER (INSPECT / PREVIEW)
+   3. DOM CARD BUILDER
    ========================================================================= */
 function createCardElement(p, isPreview = false) {
   const t = THEMES[p.theme] || THEMES.cyber;
@@ -524,9 +530,9 @@ function createCardElement(p, isPreview = false) {
     previewWrap.className = 'preview-stage-wrap';
     for (const [k, v] of Object.entries({
       '--card-bg': t.bg, '--card-text': t.text, '--card-accent': t.accent,
-      '--card-accent-15': rgba(t.accent, .15), '--card-accent-20': rgba(t.accent, .2),
-      '--card-accent-25': rgba(t.accent, .25), '--card-accent-40': rgba(t.accent, .4),
-      '--card-accent-50': rgba(t.accent, .5), '--card-accent2-20': rgba(t.accent2, .2),
+      '--card-accent-15': hexToRgba(t.accent, .15), '--card-accent-20': hexToRgba(t.accent, .2),
+      '--card-accent-25': hexToRgba(t.accent, .25), '--card-accent-40': hexToRgba(t.accent, .4),
+      '--card-accent-50': hexToRgba(t.accent, .5), '--card-accent2-20': hexToRgba(t.accent2, .2),
       '--card-tag-bg': t.tagBg
     })) previewWrap.style.setProperty(k, v);
 
@@ -549,9 +555,9 @@ function createCardElement(p, isPreview = false) {
 
   for (const [k, v] of Object.entries({
     '--card-bg': t.bg, '--card-text': t.text, '--card-accent': t.accent,
-    '--card-accent-15': rgba(t.accent, .15), '--card-accent-20': rgba(t.accent, .2),
-    '--card-accent-25': rgba(t.accent, .25), '--card-accent-40': rgba(t.accent, .4),
-    '--card-accent-50': rgba(t.accent, .5), '--card-accent2-20': rgba(t.accent2, .2),
+    '--card-accent-15': hexToRgba(t.accent, .15), '--card-accent-20': hexToRgba(t.accent, .2),
+    '--card-accent-25': hexToRgba(t.accent, .25), '--card-accent-40': hexToRgba(t.accent, .4),
+    '--card-accent-50': hexToRgba(t.accent, .5), '--card-accent2-20': hexToRgba(t.accent2, .2),
     '--card-tag-bg': t.tagBg
   })) card.style.setProperty(k, v);
 
@@ -612,14 +618,15 @@ function scramble(h, a) {
 }
 
 /* =========================================================================
-   4. BATCH CONTROLLER: 3 CARDS SETTLE AT BOTTOM -> SWIPE ADVANCES
+   4. DECK CONTROLLER (3 CARDS SETTLE AT BOTTOM -> SWIPED UP ONE BY ONE)
    ========================================================================= */
 let currentBatch = [];
-let activeBatchIndex = -1; // -1: none active, 0: card 1, 1: card 2, 2: card 3
+let activeBatchIndex = -1;
 let cursor = null;
 let hasMore = true;
 let isFetching = false;
 let currentCardNode = null;
+let isTransitioning = false;
 
 function updateBottomTrayUI() {
   for (let i = 0; i < 3; i++) {
@@ -644,18 +651,18 @@ function updateBottomTrayUI() {
   }
 
   if (activeBatchIndex >= 0 && activeBatchIndex < currentBatch.length) {
-    swipeIndicator.textContent = `NEXT ▲ (${activeBatchIndex + 1}/3)`;
+    btnNextSwipe.textContent = `NEXT ▲ (${activeBatchIndex + 1}/3)`;
   } else if (currentBatch.length > 0) {
-    swipeIndicator.textContent = `SWIPE UP ▲`;
+    btnNextSwipe.textContent = `SWIPE UP ▲`;
   } else {
-    swipeIndicator.textContent = `LOADING...`;
+    btnNextSwipe.textContent = `LOADING...`;
   }
 }
 
 async function loadNextTriad(autoPresentFirst = true) {
   if (isFetching || !hasMore) return;
   isFetching = true;
-  swipeIndicator.textContent = `SYNCING...`;
+  btnNextSwipe.textContent = `SYNCING...`;
 
   try {
     let q = sbClient
@@ -675,8 +682,8 @@ async function loadNextTriad(autoPresentFirst = true) {
 
     if (!data || data.length === 0) {
       hasMore = false;
-      toast('✦ REACHED END OF KINETIC ARCHIVE');
-      swipeIndicator.textContent = `END OF ARCHIVE`;
+      toast('✦ END OF KINETIC STREAM');
+      btnNextSwipe.textContent = `END STREAM`;
       return;
     }
 
@@ -707,7 +714,6 @@ function presentCard(index) {
 
   activeSlot.appendChild(newCard);
 
-  // Smooth entry from bottom into center
   requestAnimationFrame(() => {
     newCard.classList.add('entered');
     newCard.classList.remove('enter-bottom');
@@ -719,15 +725,16 @@ function presentCard(index) {
         if (stage.classList.contains('anim-cyber_scramble')) {
           scramble(stage.querySelector('.kinetic-headline'), cardData.accent_word || cardData.accentWord);
         }
-      }, 180);
+      }, 160);
     }
   });
 
   currentCardNode = newCard;
+  isTransitioning = false;
 }
 
 function dismissActiveAndAdvance() {
-  if (isFetching) return;
+  if (isFetching || isTransitioning) return;
 
   if (!currentCardNode) {
     if (currentBatch.length > 0) presentCard(0);
@@ -735,69 +742,84 @@ function dismissActiveAndAdvance() {
     return;
   }
 
-  // Active card flies off the top
+  isTransitioning = true;
   const exiting = currentCardNode;
   exiting.classList.add('exit-top');
 
-  // Immediately remove from DOM after flight transition
   setTimeout(() => {
     exiting.remove();
-  }, 480);
+  }, 440);
 
   const nextIndex = activeBatchIndex + 1;
 
   if (nextIndex < currentBatch.length) {
-    // Present next card in current triad
     setTimeout(() => {
       presentCard(nextIndex);
     }, 120);
   } else {
-    // 3 cards completed -> fetch next set of 3
+    // 3 cards completed -> safely request the next triad
     currentCardNode = null;
     activeBatchIndex = 3;
     updateBottomTrayUI();
-    toast('✦ LOADING NEXT TRIAD TO DOCK');
+    toast('✦ LOADING NEXT 3 CARDS TO DOCK');
     loadNextTriad(true);
   }
 }
 
 /* =========================================================================
-   5. UPWARD SWIPE / WHEEL GESTURE DETECTOR
+   5. REAL 1:1 FLUID TOUCH SWIPE CONTROLLER
    ========================================================================= */
-let touchStartY = 0, touchStartX = 0, isTracking = false;
+let startY = 0, currentY = 0, startX = 0, isDragging = false;
 
 window.addEventListener('touchstart', e => {
   if (e.target.closest('#creatorDrawer, #searchDrawer, button, a, input, select, textarea')) return;
-  touchStartY = e.touches[0].clientY;
-  touchStartX = e.touches[0].clientX;
-  isTracking = true;
+  if (!currentCardNode || isTransitioning) return;
+  startY = e.touches[0].clientY;
+  startX = e.touches[0].clientX;
+  currentY = startY;
+  isDragging = true;
+  currentCardNode.style.transition = 'none';
 }, { passive: true });
 
-window.addEventListener('touchend', e => {
-  if (!isTracking) return;
-  isTracking = false;
-  let diffY = e.changedTouches[0].clientY - touchStartY;
-  let diffX = e.changedTouches[0].clientX - touchStartX;
+window.addEventListener('touchmove', e => {
+  if (!isDragging || !currentCardNode) return;
+  currentY = e.touches[0].clientY;
+  let dy = currentY - startY;
+  let dx = e.touches[0].clientX - startX;
 
-  // Swiped Upwards (> 42px)
-  if (diffY < -42 && Math.abs(diffY) > Math.abs(diffX)) {
-    dismissActiveAndAdvance();
+  // Track finger smoothly upward
+  if (dy < 0 && Math.abs(dy) > Math.abs(dx)) {
+    currentCardNode.style.transform = `translate3d(0, ${dy}px, 0) scale(${1 - Math.min(0.08, -dy / 1000)})`;
+    currentCardNode.style.opacity = `${1 - Math.min(0.55, -dy / 450)}`;
   }
 }, { passive: true });
 
+window.addEventListener('touchend', () => {
+  if (!isDragging || !currentCardNode) return;
+  isDragging = false;
+  let dy = currentY - startY;
+  currentCardNode.style.transition = 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease';
+
+  if (dy < -55) {
+    dismissActiveAndAdvance();
+  } else {
+    currentCardNode.style.transform = 'translate3d(0, 0, 0) scale(1)';
+    currentCardNode.style.opacity = '1';
+  }
+}, { passive: true });
+
+/* DESK / MOUSE WHEEL GESTURE */
 let wheelLock = false;
 window.addEventListener('wheel', e => {
   if (e.target.closest('#creatorDrawer, #searchDrawer')) return;
-  if (e.deltaY > 35 && !wheelLock) {
+  if (e.deltaY > 28 && !wheelLock && !isTransitioning) {
     wheelLock = true;
     dismissActiveAndAdvance();
     setTimeout(() => { wheelLock = false; }, 550);
   }
 }, { passive: true });
 
-document.getElementById('bottomDeckTray').addEventListener('click', () => {
-  dismissActiveAndAdvance();
-});
+btnNextSwipe.addEventListener('click', dismissActiveAndAdvance);
 
 /* =========================================================================
    6. SOCIAL INTERACTIONS
@@ -839,7 +861,7 @@ function toggleVoice(id, b) {
 }
 
 /* =========================================================================
-   7. CREATOR DRAWER & LIVE PREVIEW
+   7. CREATOR DRAWER & PREVIEW
    ========================================================================= */
 const drawer = document.getElementById('creatorDrawer');
 const wrap = document.getElementById('previewPhoneWrap');
@@ -896,7 +918,7 @@ document.getElementById('btnOpenCreator').onclick = () => {
 };
 document.getElementById('btnCloseDrawer').onclick = () => drawer.classList.remove('open');
 
-/* COMMIT ACTION: STRICTLY ALIGNED WITH DB CHECK CONSTRAINTS */
+/* COMMIT ACTION: STRICTLY CONSTRAINED TO warp, grid, clouds */
 document.getElementById('btnCommit').onclick = async () => {
   let d = form();
   if (!d.headline) return toast('Headline text is required');
@@ -913,7 +935,7 @@ document.getElementById('btnCommit').onclick = async () => {
       subtitle: d.subtitle || null,
       anim: d.anim || 'kinetic_slam',
       theme: d.theme || 'cyber',
-      bg: d.bg || 'warp', // Validated against DB CHECK constraint
+      bg: d.bg || 'warp', // Passes kinetic_wall_bg_check constraint
       outbound_url: d.outbound_url || null,
       audio_url: null
     };
@@ -930,7 +952,6 @@ document.getElementById('btnCommit').onclick = async () => {
     own.add(data.id);
     save('tf-own', own);
 
-    // Insert as the fresh active card immediately
     if (currentCardNode) currentCardNode.remove();
     currentBatch.unshift(data);
     activeBatchIndex = 0;
